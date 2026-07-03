@@ -8,7 +8,7 @@ Its immediate goals are:
 
 - initialize the WM8960 audio output hardware
 - initialize the SD card hardware
-- scan the SD card for sound files named like `0-bird.wav`
+- scan the SD card for sound files named like `0-putt.wav`
 - build a simple `sound_id -> file path` table
 - provide simple serial commands for bring-up and debugging
 
@@ -52,9 +52,9 @@ It also includes a tone generator for verifying that the audio path is alive ind
 
 Examples:
 
-- `0-bird.wav`
-- `1-dog.wav`
-- `2-golf-swing.wav`
+- `0-putt.wav`
+- `1-applause.wav`
+- `2-ball-going-in-hole.wav`
 
 Only the leading integer before the first `-` is used as the `sound_id`.
 
@@ -83,13 +83,36 @@ The most reliable playback seen so far is:
 - `16-bit`
 - minimal header with an easy-to-find `data` chunk
 
-`3-Windows-Unlock.wav` is currently the known-good reference file.
+The generated files in `sound_server/audio` are now the primary reference set.
 
-Other files may still decode, but mixed sample rates, mono files, or extra metadata chunks can currently make behavior less reliable.
+The firmware is happiest when files are converted into the shared baseline format before being copied to the SD card.
 
-## Normalizing The Sound Pack
+## Building The Runtime Sound Pack
 
-There is now a helper script at `tools/normalize_wavs.ps1` to batch-convert a folder of WAV files into a safer baseline format without overwriting the originals.
+The intended source assets now live in `sound_server/audio_originals` as `.ogg` files.
+
+There is a helper script at `tools/convert_audio_originals.ps1` to batch-convert those source assets into the runtime WAV files used by the firmware.
+
+From the `AlexsAudio` repo root:
+
+```powershell
+.\tools\convert_audio_originals.ps1
+```
+
+By default it reads from `.\sound_server\audio_originals` and writes the generated WAV files to `.\sound_server\audio`.
+
+This keeps the compressed source assets and the firmware-ready WAV outputs separate and reproducible.
+
+It uses `ffmpeg` to:
+
+- strip metadata
+- force `stereo`
+- force `22050 Hz`
+- force `16-bit PCM`
+
+## Normalizing Existing WAVs
+
+There is also a helper script at `tools/normalize_wavs.ps1` for cases where you already have WAV files and want to convert them into a safer baseline format without overwriting the originals.
 
 From the `AlexsAudio` repo root:
 
@@ -149,14 +172,14 @@ SD MISO        : GPIO 19
 SD MOSI        : GPIO 23
 SD initialization succeeded.
 Discovered sound map:
-  0 -> 0-ding.wav
-  1 -> 1-Windows-Background.wav
-  2 -> 2-Windows-Notify-Email.wav
-  3 -> 3-Windows-Unlock.wav
-  4 -> 4-BasicDoneListeningEarcon.wav
-  5 -> 5-BasicListeningEarcon.wav
-  6 -> <none>
-  7 -> <none>
+  0 -> 0-putt.wav
+  1 -> 1-applause.wav
+  2 -> 2-ball-going-in-hole.wav
+  3 -> 3-ball-landing-in-water.wav
+  4 -> 4-drive.wav
+  5 -> 5-ball-landing-on-sand.wav
+  6 -> 6-ball-landing-on-grass.wav
+  7 -> 7-sad-groans.wav
 mtb_wm8960_set_wire
 [W] WM8960Stream.h : 190 - Setup features: 24
 mtb_wm8960_init
@@ -217,20 +240,20 @@ Commands:
   play <id> - play the WAV file mapped to sound ID
 list
 Discovered sound map:
-  0 -> 0-ding.wav
-  1 -> 1-Windows-Background.wav
-  2 -> 2-Windows-Notify-Email.wav
-  3 -> 3-Windows-Unlock.wav
-  4 -> 4-BasicDoneListeningEarcon.wav
-  5 -> 5-BasicListeningEarcon.wav
-  6 -> <none>
-  7 -> <none>
+  0 -> 0-putt.wav
+  1 -> 1-applause.wav
+  2 -> 2-ball-going-in-hole.wav
+  3 -> 3-ball-landing-in-water.wav
+  4 -> 4-drive.wav
+  5 -> 5-ball-landing-on-sand.wav
+  6 -> 6-ball-landing-on-grass.wav
+  7 -> 7-sad-groans.wav
 tone on
 Tone enabled.
 tone off
 Tone disabled.
 play 1
-Playing sound ID 1 -> 1-Windows-Background.wav
+Playing sound ID 1 -> 1-applause.wav
 Playback finished for sound ID 1
 help
 Commands:

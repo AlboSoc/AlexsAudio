@@ -5,3 +5,4 @@
 *.code-workspace
 Thumbs.db
 Desktop.ini
+sound_server/audio_normalized/

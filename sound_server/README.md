@@ -63,15 +63,48 @@ Only the leading integer before the first `-` is used as the `sound_id`.
 - `help`
   - print available commands
 - `list`
-  - print the discovered sound map
+  - print the discovered sound map and parsed WAV format details
 - `tone on`
   - enable a test tone through the WM8960
 - `tone off`
   - disable the test tone
 - `play <id>`
-  - currently resolves and prints the matching file path for that ID
+  - plays the matching WAV file for that ID through the WM8960 output path
+- `volume <0-100>`
+  - sets the WM8960 output volume percentage live without reflashing
 
-The `play` command is currently a placeholder for the next stage, where we hook SD-based WAV playback into the audio output path.
+## Currently Known-Good WAV Format
+
+The most reliable playback seen so far is:
+
+- PCM WAV (`fmt=1`)
+- `22050 Hz`
+- `stereo`
+- `16-bit`
+- minimal header with an easy-to-find `data` chunk
+
+`3-Windows-Unlock.wav` is currently the known-good reference file.
+
+Other files may still decode, but mixed sample rates, mono files, or extra metadata chunks can currently make behavior less reliable.
+
+## Normalizing The Sound Pack
+
+There is now a helper script at `tools/normalize_wavs.ps1` to batch-convert a folder of WAV files into a safer baseline format without overwriting the originals.
+
+From the `AlexsAudio` repo root:
+
+```powershell
+.\tools\normalize_wavs.ps1
+```
+
+By default it reads from `.\sound_server\audio` and writes normalized files to `.\sound_server\audio_normalized`.
+
+It uses `ffmpeg` to:
+
+- strip metadata
+- force `stereo`
+- force `22050 Hz`
+- force `16-bit PCM`
 
 ## Build And Run
 
@@ -181,7 +214,7 @@ Commands:
   list      - show discovered sound IDs
   tone on   - enable WM8960 test tone
   tone off  - disable WM8960 test tone
-  play <id> - resolve and print the file mapped to sound ID
+  play <id> - play the WAV file mapped to sound ID
 list
 Discovered sound map:
   0 -> 0-ding.wav
@@ -197,20 +230,20 @@ Tone enabled.
 tone off
 Tone disabled.
 play 1
-Resolved sound ID 1 -> 1-Windows-Background.wav
-Playback from SD is the next implementation step.
+Playing sound ID 1 -> 1-Windows-Background.wav
+Playback finished for sound ID 1
 help
 Commands:
   help      - show this help
   list      - show discovered sound IDs
   tone on   - enable WM8960 test tone
   tone off  - disable WM8960 test tone
-  play <id> - resolve and print the file mapped to sound ID
+  play <id> - play the WAV file mapped to sound ID
 ```
 
 ## Next Step
 
-Once this project is behaving cleanly, the next useful upgrade is:
+Once this project is behaving cleanly, the next useful upgrades are:
 
-- replace the placeholder `play <id>` behavior with real WAV playback from SD
-
+- confirm playback reliability across the intended WAV files
+- add transport-triggered playback instead of only serial commands

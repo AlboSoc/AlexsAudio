@@ -10,6 +10,8 @@ It currently contains two PlatformIO projects plus one architecture note:
   - WM8960 + SD integration bring-up for the dedicated sound-server ESP32
 - `TWO_ESP32_AUDIO_ARCHITECTURE.md`
   - higher-level notes about the overall system direction
+- [COMMUNICATION_TRIGGER_PLAN.md](COMMUNICATION_TRIGGER_PLAN.md)
+  - phased plan for transport-neutral trigger handling over CLI, `UART`, and `ESP-NOW`
 
 ## Repository Layout
 
@@ -17,6 +19,7 @@ It currently contains two PlatformIO projects plus one architecture note:
 AlexsAudio/
 |-- sd_card_bringup/
 |-- sound_server/
+|-- COMMUNICATION_TRIGGER_PLAN.md
 |-- TWO_ESP32_AUDIO_ARCHITECTURE.md
 |-- .gitignore
 `-- README.md
@@ -49,6 +52,6 @@ C:\Users\alanb\.platformio\penv\Scripts\platformio.exe device monitor -b 115200 
 
 ## Next Steps
 
-- replace placeholder sound resolution with real WAV playback
-- decide whether to share common helpers between projects
-- add transport support once local audio playback is stable
+- refactor local triggering around a shared `PlaySoundCommand`
+- add `UART` as the first external trigger transport
+- later add `ESP-NOW` as an alternative transport

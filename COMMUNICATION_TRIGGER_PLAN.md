@@ -220,15 +220,16 @@ Most importantly, it matches the current project style:
 
 The next implementation steps should be:
 
-1. Introduce `PlaySoundCommand` in `sound_server`.
-2. Refactor the current CLI `play <id>` path to use the shared command executor.
-3. Add a minimal `UART` receiver that can build the same command.
-4. Only after that, build the simple WebSerial test page.
+1. Add a second ESP32 sender that can emit the same trigger packet over wired `UART`.
+2. Decide whether the sender should expose a tiny local CLI, buttons, or both for bench testing.
+3. Reuse the same packet contract for `ESP-NOW`.
+4. Keep the browser WebSerial page as a convenient host-side test harness.
 
 ## Status
 
 At the time of writing:
 
 - local WAV playback from the sound-server is working
-- Phase 0 is now in progress via a shared `PlaySoundCommand` executor path in `sound_server`
-- `UART` is the preferred first external trigger transport
+- Phase 0 is complete via a shared `PlaySoundCommand` executor path in `sound_server`
+- Phase 1 is complete via packet-triggered playback over `UART` plus a browser WebSerial test page
+- the next major milestone is a second ESP32 sender, followed by `ESP-NOW`

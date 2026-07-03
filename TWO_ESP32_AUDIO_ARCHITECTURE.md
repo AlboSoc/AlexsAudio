@@ -9,9 +9,9 @@ Support two ESP32 devices:
 
 The sound-server ESP32 is expected to use fixed-format audio files with stable naming, for example:
 
-- `0-bird.wav`
-- `1-dog.wav`
-- `2-golf-swing.wav`
+- `0-putt.wav`
+- `1-applause.wav`
+- `2-ball-going-in-hole.wav`
 
 ## Updated Requirements
 
@@ -100,9 +100,9 @@ The sound server should scan the SD card at startup and build a lookup table bas
 
 Examples:
 
-- `0-bird.wav` -> `sound_id = 0`
-- `1-dog.wav` -> `sound_id = 1`
-- `2-golf-swing.wav` -> `sound_id = 2`
+- `0-putt.wav` -> `sound_id = 0`
+- `1-applause.wav` -> `sound_id = 1`
+- `2-ball-going-in-hole.wav` -> `sound_id = 2`
 
 Simple rule:
 
@@ -303,10 +303,11 @@ Recommended first behavior:
 1. Build the sound-server locally first.
 2. Add SD-card scanning and simple local playback testing.
 3. Define the shared packet format.
-4. Add `ESP-NOW`.
-5. Add `UART` bench testing.
-6. Add `RS-485` transceivers on the wired path.
-7. Add simple startup or compile-time transport selection.
+4. Add `UART` bench testing.
+5. Add a second ESP32 sender using the same packet format.
+6. Add `ESP-NOW`.
+7. Add `RS-485` transceivers on the wired path.
+8. Add simple startup or compile-time transport selection.
 
 ## Bring-Up Plan
 
@@ -336,11 +337,35 @@ Tasks:
 3. Implement encode/decode helpers.
 4. Add a simple packet test harness.
 
-### Milestone 3: ESP-NOW Path
+### Milestone 3: UART Bench Path
 
 Goal:
 
-- Get end-to-end wireless triggering working.
+- Prove the wired software transport without worrying about RS-485 hardware yet.
+
+Tasks:
+
+1. Implement the sound-server packet receiver.
+2. Build a simple host-side WebSerial test harness.
+3. Verify packet framing and playback over the existing USB serial link.
+
+### Milestone 4: Second ESP32 Sender
+
+Goal:
+
+- Replace the browser-only bench path with an embedded sender that uses the same packet format.
+
+Tasks:
+
+1. Implement sender-side packet generation on a second ESP32.
+2. Test with direct UART connection on the bench.
+3. Verify packet framing, playback, and basic latency.
+
+### Milestone 5: ESP-NOW Path
+
+Goal:
+
+- Get end-to-end wireless triggering working using the same packet contract.
 
 Tasks:
 
@@ -349,19 +374,7 @@ Tasks:
 3. Trigger sound-server playback from received packet.
 4. Measure practical latency and reliability.
 
-### Milestone 4: UART Bench Path
-
-Goal:
-
-- Prove the wired software transport without worrying about RS-485 hardware yet.
-
-Tasks:
-
-1. Implement `UartTransport`.
-2. Test with direct UART connection on the bench.
-3. Verify packet framing and playback.
-
-### Milestone 5: RS-485 Physical Layer
+### Milestone 6: RS-485 Physical Layer
 
 Goal:
 

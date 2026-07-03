@@ -36,6 +36,16 @@ This lets us prove that the core hardware pieces can coexist on one ESP32 before
 - `MISO -> GPIO 19`
 - `MOSI -> GPIO 23`
 
+### Trigger UART
+
+- `RX   -> GPIO 16` (`RXD2` on the `ESP32 DEV KIT V1` board)
+- `TX   -> GPIO 17` (`TXD2` on the `ESP32 DEV KIT V1` board)
+- `115200 8N1`
+
+Board reference:
+
+- [ESP32 DEV KIT V1 pinout reference](../docs/ESP32-DOIT-DEV-KIT-v1-pinout-mischianti.png)
+
 ## Current Behavior
 
 At startup the project:
@@ -77,7 +87,10 @@ Only the leading integer before the first `-` is used as the `sound_id`.
 
 ## UART Trigger Packet
 
-The sound server now accepts a fixed-size trigger packet on the same serial port used for the text CLI.
+The sound server now accepts a fixed-size trigger packet on:
+
+- the USB serial port used for the text CLI and WebSerial bring-up
+- the dedicated wired trigger UART on `GPIO 16/17`
 
 Packet layout:
 
@@ -96,6 +109,7 @@ Notes:
 - `stop` stops the current playback immediately
 - `ping` produces a simple serial log response for transport bring-up
 - normal text commands and binary packets can share the same serial port, but not at the same instant from two different host applications
+- the same packet format is also consumed on the dedicated wired trigger UART
 
 ## Currently Known-Good WAV Format
 
@@ -295,9 +309,10 @@ Commands:
   play <id> - play the WAV file mapped to sound ID
 ```
 
-## Next Step
+## Next Steps
 
-Once this project is behaving cleanly, the next useful upgrades are:
+The next useful upgrades for this project are:
 
-- confirm playback reliability across the intended WAV files
-- add transport-triggered playback instead of only serial commands
+- confirm packet-triggered playback behaves reliably across the full sound set and the wired ESP32-to-ESP32 path
+- decide whether the sound server should emit any reply traffic on the wired UART
+- later add `ESP-NOW` using the same packet format and command path

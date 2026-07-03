@@ -101,34 +101,12 @@ void SerialInterface::handlePacket(const PlaySoundPacket &packet) {
   }
 }
 
-void SerialInterface::handleIncomingTextByte(char c) {
-  if (c == '\r') {
-    return;
-  }
-  if (c == '\n') {
-    handleCommand(serialBuffer_);
-    serialBuffer_ = "";
-  } else {
-    serialBuffer_ += c;
-  }
-}
-
 void SerialInterface::poll() {
-  while (Serial.available()) {
-    uint8_t byte = static_cast<uint8_t>(Serial.read());
-    if (packetParser_.isReceiving() || byte == PLAY_SOUND_PACKET_MAGIC) {
-      PlaySoundPacket packet;
-      PlaySoundPacketParser::Result result = packetParser_.pushByte(byte, packet);
-      if (result == PlaySoundPacketParser::Result::Complete) {
-        handlePacket(packet);
-      } else if (result == PlaySoundPacketParser::Result::Invalid) {
-        Serial.println("Discarded invalid trigger packet.");
-      }
-      continue;
-    }
-
-    handleIncomingTextByte(static_cast<char>(byte));
-  }
+  commandStream_.poll(
+      Serial,
+      [this](const PlaySoundPacket &packet) { handlePacket(packet); },
+      [this](String command) { handleCommand(command); },
+      []() { Serial.println("Discarded invalid trigger packet."); });
 }
 
 }  // namespace sound_server

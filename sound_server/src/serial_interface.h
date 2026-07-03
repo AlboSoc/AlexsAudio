@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Arduino.h>
+#include <alexs_audio/command_stream.h>
 
 #include "audio_engine.h"
 #include "play_sound_packet.h"
@@ -12,11 +13,10 @@ class SerialInterface {
  public:
   SerialInterface(AudioEngine &audioEngine, const SoundMap &soundMap);
 
-  void printHelp() const;
+ void printHelp() const;
   void poll();
 
  private:
-  void handleIncomingTextByte(char c);
   void handleCommand(String command);
   void handlePacket(const PlaySoundPacket &packet);
   void handlePlayCommand(const String &command);
@@ -24,8 +24,7 @@ class SerialInterface {
 
   AudioEngine &audioEngine_;
   const SoundMap &soundMap_;
-  PlaySoundPacketParser packetParser_;
-  String serialBuffer_;
+  alexs_audio::CommandStream commandStream_;
 };
 
 }  // namespace sound_server

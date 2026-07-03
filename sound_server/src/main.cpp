@@ -3,12 +3,14 @@
 #include "audio_engine.h"
 #include "serial_interface.h"
 #include "sound_map.h"
+#include "uart_trigger_receiver.h"
 
 namespace {
 
 sound_server::SoundMap *soundMap = nullptr;
 sound_server::AudioEngine *audioEngine = nullptr;
 sound_server::SerialInterface *serialInterface = nullptr;
+sound_server::UartTriggerReceiver *uartTriggerReceiver = nullptr;
 
 }  // namespace
 
@@ -21,8 +23,10 @@ void setup() {
   soundMap = new sound_server::SoundMap();
   audioEngine = new sound_server::AudioEngine();
   serialInterface = new sound_server::SerialInterface(*audioEngine, *soundMap);
+  uartTriggerReceiver = new sound_server::UartTriggerReceiver(*audioEngine);
 
   audioEngine->printBanner();
+  uartTriggerReceiver->printConfig();
 
   if (!audioEngine->beginSdCard()) {
     Serial.println("Check SD wiring, card formatting, and power.");
@@ -40,12 +44,17 @@ void setup() {
     Serial.println("WM8960 initialization succeeded.");
   }
 
+  uartTriggerReceiver->begin();
   serialInterface->printHelp();
 }
 
 void loop() {
   if (serialInterface != nullptr) {
     serialInterface->poll();
+  }
+
+  if (uartTriggerReceiver != nullptr) {
+    uartTriggerReceiver->poll();
   }
 
   if (audioEngine != nullptr) {

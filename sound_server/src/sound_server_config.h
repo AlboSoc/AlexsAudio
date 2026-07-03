@@ -22,4 +22,8 @@ constexpr uint8_t CHANNELS = 2;
 constexpr uint8_t BITS_PER_SAMPLE = 16;
 constexpr float DEFAULT_OUTPUT_VOLUME = 0.9f;
 
+constexpr uint8_t TRIGGER_UART_RX_PIN = 16;
+constexpr uint8_t TRIGGER_UART_TX_PIN = 17;
+constexpr uint32_t TRIGGER_UART_BAUD = 115200;
+
 }  // namespace sound_server

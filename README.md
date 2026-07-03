@@ -2,13 +2,19 @@
 
 This repository is the shared home for the AlexsAudio ESP32 audio bring-up work.
 
+## Hardware Demo
+
+![AlexsAudio hardware bring-up demo](docs/picture_of_hardware.jpeg)
+
+*Current bench setup: the `trigger_client` is at the bottom right and uses ESP-NOW to request playback from the `sound_server`, which is the ESP32 on the upper-left side of the breadboard. The sound server is the board connected to the microSD card for file lookup and to the WM8960 audio hardware for speaker / audio output drive.*
+
 It currently contains three PlatformIO projects plus the shared design notes:
 
 - `sd_card_bringup/`
   - standalone microSD hardware and filesystem bring-up
 - `sound_server/`
   - WM8960 + SD integration bring-up for the dedicated sound-server ESP32
-- `uart_trigger_client/`
+- `trigger_client/`
   - embedded trigger sender that can drive the sound server over ESP-NOW or wired UART
 - `TWO_ESP32_AUDIO_ARCHITECTURE.md`
   - higher-level notes about the overall system direction
@@ -21,7 +27,7 @@ It currently contains three PlatformIO projects plus the shared design notes:
 AlexsAudio/
 |-- sd_card_bringup/
 |-- sound_server/
-|-- uart_trigger_client/
+|-- trigger_client/
 |-- shared/
 |-- COMMUNICATION_TRIGGER_PLAN.md
 |-- TWO_ESP32_AUDIO_ARCHITECTURE.md
@@ -60,7 +66,7 @@ cd ..\sound_server
 C:\Users\alanb\.platformio\penv\Scripts\platformio.exe run
 C:\Users\alanb\.platformio\penv\Scripts\platformio.exe device monitor -b 115200 --echo
 
-cd ..\uart_trigger_client
+cd ..\trigger_client
 C:\Users\alanb\.platformio\penv\Scripts\platformio.exe run
 C:\Users\alanb\.platformio\penv\Scripts\platformio.exe device monitor -b 115200 --echo
 ```

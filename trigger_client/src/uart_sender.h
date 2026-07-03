@@ -4,7 +4,7 @@
 
 #include "packet_sender.h"
 
-namespace uart_trigger_client {
+namespace trigger_client {
 
 class UartSender : public PacketSender {
  public:
@@ -13,4 +13,4 @@ class UartSender : public PacketSender {
   bool sendPacket(const alexs_audio::PlaySoundPacket &packet) override;
 };
 
-}  // namespace uart_trigger_client
+}  // namespace trigger_client

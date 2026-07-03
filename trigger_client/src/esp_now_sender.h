@@ -7,7 +7,7 @@
 
 #include "packet_sender.h"
 
-namespace uart_trigger_client {
+namespace trigger_client {
 
 class EspNowSender : public PacketSender {
  public:
@@ -20,4 +20,4 @@ class EspNowSender : public PacketSender {
   bool addBroadcastPeer();
 };
 
-}  // namespace uart_trigger_client
+}  // namespace trigger_client

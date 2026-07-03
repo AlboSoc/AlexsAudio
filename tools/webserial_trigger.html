@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>AlexsAudio UART Trigger</title>
+  <title>AlexsAudio Trigger Console</title>
   <style>
     :root {
       color-scheme: light;
@@ -141,9 +141,9 @@
 </head>
 <body>
   <main>
-    <h1>AlexsAudio UART Trigger</h1>
+    <h1>AlexsAudio Trigger Console</h1>
     <p class="lede">
-      This page sends fixed-size trigger packets over WebSerial to the sound server's existing USB serial port.
+      This page sends fixed-size trigger packets over WebSerial to an AlexsAudio device over its USB serial port.
       Packet format: <code>A5 01 cmd soundId seq checksum</code>, where checksum is the XOR of the first five bytes.
     </p>
 
@@ -174,6 +174,7 @@
         <ul>
           <li>Use a Chromium-based browser with WebSerial support.</li>
           <li>Close any serial monitor before connecting here. Only one app can own the port at a time.</li>
+          <li>You can connect either directly to the sound server or to the trigger client.</li>
           <li>The firmware still accepts normal text commands like <code>play 3</code> on the same port.</li>
         </ul>
         <pre id="log"></pre>
@@ -383,7 +384,7 @@
     });
 
     createSoundButtons();
-    log("Ready. Connect to the sound_server USB serial port to send trigger packets.");
+    log("Ready. Connect to the sound_server or trigger_client USB serial port to send trigger packets.");
   </script>
 </body>
 </html>

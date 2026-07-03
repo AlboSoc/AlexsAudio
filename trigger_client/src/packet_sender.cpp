@@ -1,6 +1,6 @@
 #include "packet_sender.h"
 
-namespace uart_trigger_client {
+namespace trigger_client {
 
 alexs_audio::PlaySoundPacket PacketSender::makePacket(
     alexs_audio::PlaySoundPacketCommand command,
@@ -25,4 +25,4 @@ bool PacketSender::sendPing() {
   return sendPacket(makePacket(alexs_audio::PlaySoundPacketCommand::Ping, 0));
 }
 
-}  // namespace uart_trigger_client
+}  // namespace trigger_client

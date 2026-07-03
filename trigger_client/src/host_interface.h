@@ -7,7 +7,7 @@
 
 #include "packet_sender.h"
 
-namespace uart_trigger_client {
+namespace trigger_client {
 
 class HostInterface {
  public:
@@ -26,4 +26,4 @@ class HostInterface {
   alexs_audio::CommandStream commandStream_;
 };
 
-}  // namespace uart_trigger_client
+}  // namespace trigger_client

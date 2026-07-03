@@ -5,7 +5,7 @@
 
 #include "client_config.h"
 
-namespace uart_trigger_client {
+namespace trigger_client {
 
 namespace {
 
@@ -79,4 +79,4 @@ void EspNowSender::onPacketSent(const uint8_t *macAddr, esp_now_send_status_t st
                 status == ESP_NOW_SEND_SUCCESS ? "ok" : "fail");
 }
 
-}  // namespace uart_trigger_client
+}  // namespace trigger_client

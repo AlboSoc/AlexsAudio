@@ -4,7 +4,7 @@
 
 #include <alexs_audio/play_sound_protocol.h>
 
-namespace uart_trigger_client {
+namespace trigger_client {
 
 class PacketSender {
  public:
@@ -26,4 +26,4 @@ class PacketSender {
   uint8_t sequence_ = 0;
 };
 
-}  // namespace uart_trigger_client
+}  // namespace trigger_client

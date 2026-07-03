@@ -1,15 +1,15 @@
 #include "host_interface.h"
 
-namespace uart_trigger_client {
+namespace trigger_client {
 
 HostInterface::HostInterface(PacketSender &packetSender) : packetSender_(packetSender) {}
 
 void HostInterface::printHelp() const {
   Serial.println("Commands:");
   Serial.println("  help      - show this help");
-  Serial.println("  play <id> - send a play trigger packet over wired UART");
-  Serial.println("  stop      - send a stop trigger packet over wired UART");
-  Serial.println("  ping      - send a ping trigger packet over wired UART");
+  Serial.println("  play <id> - send a play trigger packet over the selected transport");
+  Serial.println("  stop      - send a stop trigger packet over the selected transport");
+  Serial.println("  ping      - send a ping trigger packet over the selected transport");
   Serial.printf("Binary trigger packets are also accepted on this port: magic=0x%02X, version=%u, size=%u bytes\n",
                 alexs_audio::PLAY_SOUND_PACKET_MAGIC,
                 alexs_audio::PLAY_SOUND_PACKET_VERSION,
@@ -91,4 +91,4 @@ void HostInterface::poll() {
       []() { Serial.println("Discarded invalid trigger packet."); });
 }
 
-}  // namespace uart_trigger_client
+}  // namespace trigger_client

@@ -110,25 +110,6 @@ It uses `ffmpeg` to:
 - force `22050 Hz`
 - force `16-bit PCM`
 
-## Normalizing Existing WAVs
-
-There is also a helper script at `tools/normalize_wavs.ps1` for cases where you already have WAV files and want to convert them into a safer baseline format without overwriting the originals.
-
-From the `AlexsAudio` repo root:
-
-```powershell
-.\tools\normalize_wavs.ps1
-```
-
-By default it reads from `.\sound_server\audio` and writes normalized files to `.\sound_server\audio_normalized`.
-
-It uses `ffmpeg` to:
-
-- strip metadata
-- force `stereo`
-- force `22050 Hz`
-- force `16-bit PCM`
-
 ## Build And Run
 
 From this folder:

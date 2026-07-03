@@ -6,7 +6,7 @@ This repository is the shared home for the AlexsAudio ESP32 audio bring-up work.
 
 ![AlexsAudio hardware bring-up demo](docs/picture_of_hardware.jpeg)
 
-*Current bench setup: the `trigger_client` is at the bottom right and uses ESP-NOW to request playback from the `sound_server`, which is the ESP32 on the upper-left side of the breadboard. The sound server is the board connected to the microSD card for file lookup and to the WM8960 audio hardware for speaker / audio output drive.*
+*Current bench setup: the `trigger_client` is at the bottom right and uses ESP-NOW to request playback from the `sound_server`, which is the ESP32 on the upper-left side of the breadboard. The sound server is the board connected to the microSD card for file lookup and to the WM8960 audio hardware for speaker / audio output drive. The laptop screen is showing the browser-based WebSerial trigger console used for bench testing and manual control.*
 
 It currently contains three PlatformIO projects plus the shared design notes:
 

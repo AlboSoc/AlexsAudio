@@ -5,13 +5,13 @@
 #include <alexs_audio/command_stream.h>
 #include <alexs_audio/play_sound_protocol.h>
 
-#include "uart_sender.h"
+#include "packet_sender.h"
 
 namespace uart_trigger_client {
 
 class HostInterface {
  public:
-  explicit HostInterface(UartSender &uartSender);
+  explicit HostInterface(PacketSender &packetSender);
 
   void printHelp() const;
   void poll();
@@ -22,7 +22,7 @@ class HostInterface {
   void handlePacket(const alexs_audio::PlaySoundPacket &packet);
   void logPacket(const char *prefix, const alexs_audio::PlaySoundPacket &packet) const;
 
-  UartSender &uartSender_;
+  PacketSender &packetSender_;
   alexs_audio::CommandStream commandStream_;
 };
 

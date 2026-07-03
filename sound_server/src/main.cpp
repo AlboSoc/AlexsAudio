@@ -1,6 +1,7 @@
 #include <Arduino.h>
 
 #include "audio_engine.h"
+#include "esp_now_trigger_receiver.h"
 #include "serial_interface.h"
 #include "sound_map.h"
 #include "uart_trigger_receiver.h"
@@ -11,6 +12,7 @@ sound_server::SoundMap *soundMap = nullptr;
 sound_server::AudioEngine *audioEngine = nullptr;
 sound_server::SerialInterface *serialInterface = nullptr;
 sound_server::UartTriggerReceiver *uartTriggerReceiver = nullptr;
+sound_server::EspNowTriggerReceiver *espNowTriggerReceiver = nullptr;
 
 }  // namespace
 
@@ -24,6 +26,7 @@ void setup() {
   audioEngine = new sound_server::AudioEngine();
   serialInterface = new sound_server::SerialInterface(*audioEngine, *soundMap);
   uartTriggerReceiver = new sound_server::UartTriggerReceiver(*audioEngine);
+  espNowTriggerReceiver = new sound_server::EspNowTriggerReceiver(*audioEngine);
 
   audioEngine->printBanner();
   uartTriggerReceiver->printConfig();
@@ -44,6 +47,13 @@ void setup() {
     Serial.println("WM8960 initialization succeeded.");
   }
 
+  if (!espNowTriggerReceiver->begin()) {
+    Serial.println("ESP-NOW receiver initialization failed.");
+  } else {
+    espNowTriggerReceiver->printConfig();
+    Serial.println("ESP-NOW receiver initialization succeeded.");
+  }
+
   uartTriggerReceiver->begin();
   serialInterface->printHelp();
 }
@@ -55,6 +65,10 @@ void loop() {
 
   if (uartTriggerReceiver != nullptr) {
     uartTriggerReceiver->poll();
+  }
+
+  if (espNowTriggerReceiver != nullptr) {
+    espNowTriggerReceiver->poll();
   }
 
   if (audioEngine != nullptr) {

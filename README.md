@@ -9,7 +9,7 @@ It currently contains three PlatformIO projects plus the shared design notes:
 - `sound_server/`
   - WM8960 + SD integration bring-up for the dedicated sound-server ESP32
 - `uart_trigger_client/`
-  - first embedded sender for the wired UART trigger path
+  - embedded trigger sender that can drive the sound server over ESP-NOW or wired UART
 - `TWO_ESP32_AUDIO_ARCHITECTURE.md`
   - higher-level notes about the overall system direction
 - [COMMUNICATION_TRIGGER_PLAN.md](COMMUNICATION_TRIGGER_PLAN.md)
@@ -38,7 +38,8 @@ The current work is centered on building out the sound-server in stable vertical
 3. scan and resolve sound files from SD
 4. add real WAV playback
 5. trigger playback over a shared packet-based transport
-6. later add a second ESP32 client and `ESP-NOW`
+6. drive the sound server from a second ESP32 client over wired UART or ESP-NOW
+7. harden transport behavior for the intended game integration
 
 ## Working In This Repo
 
@@ -66,6 +67,6 @@ C:\Users\alanb\.platformio\penv\Scripts\platformio.exe device monitor -b 115200 
 
 ## Next Steps
 
-- verify two-ESP32 wired UART bring-up end to end
-- decide whether the sender should grow extra local controls beyond the shared CLI and WebSerial path
-- add `ESP-NOW` as the next transport using the same packet contract
+- verify two-ESP32 ESP-NOW bring-up end to end in the normal demo setup
+- decide whether wired UART remains only a bench fallback or stays as a supported field option
+- add any needed acknowledgement, retry, or duplicate-suppression behavior once transport testing shows the real needs

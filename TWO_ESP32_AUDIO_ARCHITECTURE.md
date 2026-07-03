@@ -374,6 +374,13 @@ Tasks:
 3. Trigger sound-server playback from received packet.
 4. Measure practical latency and reliability.
 
+Current status:
+
+- sender and receiver implementations now exist in the repo
+- the current bring-up mode uses ESP-NOW on channel `1`
+- the client currently sends by broadcast for easy bench setup
+- the next work is to validate reliability and decide whether to move to explicit peer MACs, acknowledgements, or duplicate suppression
+
 ### Milestone 6: RS-485 Physical Layer
 
 Goal:

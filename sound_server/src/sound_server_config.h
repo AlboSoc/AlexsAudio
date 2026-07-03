@@ -25,5 +25,6 @@ constexpr float DEFAULT_OUTPUT_VOLUME = 0.9f;
 constexpr uint8_t TRIGGER_UART_RX_PIN = 16;
 constexpr uint8_t TRIGGER_UART_TX_PIN = 17;
 constexpr uint32_t TRIGGER_UART_BAUD = 115200;
+constexpr uint8_t ESP_NOW_CHANNEL = 1;
 
 }  // namespace sound_server

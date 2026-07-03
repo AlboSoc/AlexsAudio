@@ -2,7 +2,7 @@
 
 namespace uart_trigger_client {
 
-HostInterface::HostInterface(UartSender &uartSender) : uartSender_(uartSender) {}
+HostInterface::HostInterface(PacketSender &packetSender) : packetSender_(packetSender) {}
 
 void HostInterface::printHelp() const {
   Serial.println("Commands:");
@@ -38,7 +38,7 @@ void HostInterface::handlePlayCommand(const String &command) {
     return;
   }
 
-  if (uartSender_.sendPlaySound(static_cast<uint8_t>(id))) {
+  if (packetSender_.sendPlaySound(static_cast<uint8_t>(id))) {
     Serial.printf("CLI play sound=%d\n", id);
   } else {
     Serial.println("Failed to send play packet.");
@@ -58,13 +58,13 @@ void HostInterface::handleCommand(String command) {
   } else if (command.startsWith("play ")) {
     handlePlayCommand(command);
   } else if (command == "stop") {
-    if (uartSender_.sendStop()) {
+    if (packetSender_.sendStop()) {
       Serial.println("CLI stop");
     } else {
       Serial.println("Failed to send stop packet.");
     }
   } else if (command == "ping") {
-    if (uartSender_.sendPing()) {
+    if (packetSender_.sendPing()) {
       Serial.println("CLI ping");
     } else {
       Serial.println("Failed to send ping packet.");
@@ -76,7 +76,7 @@ void HostInterface::handleCommand(String command) {
 }
 
 void HostInterface::handlePacket(const alexs_audio::PlaySoundPacket &packet) {
-  if (uartSender_.sendPacket(packet)) {
+  if (packetSender_.sendPacket(packet)) {
     logPacket("FORWARDED", packet);
   } else {
     Serial.println("Failed to forward trigger packet.");

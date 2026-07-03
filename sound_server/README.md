@@ -15,7 +15,6 @@ Its immediate goals are:
 This lets us prove that the core hardware pieces can coexist on one ESP32 before adding:
 
 - WAV playback from SD card
-- `ESP-NOW`
 - `UART` / `RS-485`
 - the final game-trigger protocol
 
@@ -42,6 +41,12 @@ This lets us prove that the core hardware pieces can coexist on one ESP32 before
 - `TX   -> GPIO 17` (`TXD2` on the `ESP32 DEV KIT V1` board)
 - `115200 8N1`
 
+### ESP-NOW
+
+- current channel: `1`
+- receiver runs in `WIFI_STA` mode
+- current sender behavior is simple broadcast receive for bench bring-up
+
 Board reference:
 
 - [ESP32 DEV KIT V1 pinout reference](../docs/ESP32-DOIT-DEV-KIT-v1-pinout-mischianti.png)
@@ -59,6 +64,7 @@ At startup the project:
 It also includes a tone generator for verifying that the audio path is alive independently of SD-file playback.
 
 In addition to the text CLI, the firmware now accepts small binary trigger packets on the same USB serial port.
+The same packet path is also active on the dedicated wired UART and over ESP-NOW.
 
 ## Expected Sound File Naming
 
@@ -91,6 +97,7 @@ The sound server now accepts a fixed-size trigger packet on:
 
 - the USB serial port used for the text CLI and WebSerial bring-up
 - the dedicated wired trigger UART on `GPIO 16/17`
+- ESP-NOW on channel `1`
 
 Packet layout:
 
@@ -110,6 +117,7 @@ Notes:
 - `ping` produces a simple serial log response for transport bring-up
 - normal text commands and binary packets can share the same serial port, but not at the same instant from two different host applications
 - the same packet format is also consumed on the dedicated wired trigger UART
+- the same packet format is also consumed over ESP-NOW
 
 ## Currently Known-Good WAV Format
 
@@ -313,6 +321,6 @@ Commands:
 
 The next useful upgrades for this project are:
 
-- confirm packet-triggered playback behaves reliably across the full sound set and the wired ESP32-to-ESP32 path
-- decide whether the sound server should emit any reply traffic on the wired UART
-- later add `ESP-NOW` using the same packet format and command path
+- confirm packet-triggered playback behaves reliably across the full sound set over both wired UART and ESP-NOW
+- decide whether the sound server should emit any reply or acknowledgement traffic on either transport
+- decide whether to keep the current broadcast ESP-NOW bring-up mode or tighten it to explicit peer MACs

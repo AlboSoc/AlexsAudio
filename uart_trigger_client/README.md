@@ -1,14 +1,16 @@
-# UART Trigger Client
+# Trigger Client
 
 ## Purpose
 
-This project is the first embedded sender for the AlexsAudio wired trigger path.
+This project is the first embedded sender for the AlexsAudio trigger path.
 
 It acts as a small ESP32-side client that:
 
 - accepts the same text CLI and binary trigger packets on its USB serial port
-- forwards valid trigger packets over a wired UART link
+- forwards valid trigger packets to the sound server
 - reuses the same shared packet definition as the `sound_server`
+
+The current default transport is ESP-NOW, while the earlier wired UART path remains available as a bench fallback.
 
 This lets us bench-test two ESP32 boards together while keeping the browser WebSerial page as an optional host-side harness.
 
@@ -35,7 +37,16 @@ On the client USB serial port you can use either:
 - text commands such as `play 3`, `stop`, and `ping`
 - the browser WebSerial page at `tools/webserial_trigger.html`
 
-In both cases the client forwards the same packet format over the wired UART link.
+In both cases the client forwards the same packet format to the sound server over the currently selected transport.
+
+## Current Transport Mode
+
+- default transport: `ESP-NOW`
+- ESP-NOW channel: `1`
+- sender mode: `WIFI_STA`
+- current peer behavior: broadcast send for simple bring-up
+
+The wired UART sender code is still present and uses the same packet contract, so it can remain a fallback while we validate the wireless path.
 
 ## Build And Run
 

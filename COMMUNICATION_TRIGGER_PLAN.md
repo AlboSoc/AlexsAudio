@@ -232,4 +232,6 @@ At the time of writing:
 - local WAV playback from the sound-server is working
 - Phase 0 is complete via a shared `PlaySoundCommand` executor path in `sound_server`
 - Phase 1 is complete via packet-triggered playback over `UART` plus a browser WebSerial test page
-- the next major milestone is a second ESP32 sender, followed by `ESP-NOW`
+- Phase 2 is complete via the second ESP32 trigger client and the shared packet contract
+- the first Phase 3 implementation is now in place with ESP-NOW sender and receiver support
+- the next major milestone is transport hardening: real bench verification, acknowledgement decisions, and any duplicate-suppression or retry policy

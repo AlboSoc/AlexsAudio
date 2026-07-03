@@ -16,7 +16,7 @@ It currently contains three PlatformIO projects plus the shared design notes:
   - WM8960 + SD integration bring-up for the dedicated sound-server ESP32
 - `trigger_client/`
   - embedded trigger sender that can drive the sound server over ESP-NOW or wired UART
-- `TWO_ESP32_AUDIO_ARCHITECTURE.md`
+  - [TWO_ESP32_AUDIO_ARCHITECTURE.md(TWO_ESP32_AUDIO_ARCHITECTURE.md)]
   - higher-level notes about the overall system direction
 - [COMMUNICATION_TRIGGER_PLAN.md](COMMUNICATION_TRIGGER_PLAN.md)
   - phased plan for transport-neutral trigger handling over CLI, `UART`, and `ESP-NOW`

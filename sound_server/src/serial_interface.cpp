@@ -1,6 +1,7 @@
 #include "serial_interface.h"
 
 #include "play_sound_command.h"
+#include "play_sound_packet.h"
 #include "sound_server_config.h"
 
 namespace sound_server {
@@ -16,6 +17,10 @@ void SerialInterface::printHelp() const {
   Serial.println("  tone off  - disable WM8960 test tone");
   Serial.println("  play <id> - play the WAV file mapped to sound ID");
   Serial.println("  volume <0-100> - set WM8960 output volume percentage");
+  Serial.printf("Binary trigger packets are also accepted on this port: magic=0x%02X, version=%u, size=%u bytes\n",
+                PLAY_SOUND_PACKET_MAGIC,
+                PLAY_SOUND_PACKET_VERSION,
+                static_cast<unsigned>(PLAY_SOUND_PACKET_SIZE));
 }
 
 void SerialInterface::handlePlayCommand(const String &command) {
@@ -75,18 +80,54 @@ void SerialInterface::handleCommand(String command) {
   }
 }
 
+void SerialInterface::handlePacket(const PlaySoundPacket &packet) {
+  if (packet.command == static_cast<uint8_t>(PlaySoundPacketCommand::Play)) {
+    PlaySoundCommand playCommand;
+    playCommand.soundId = packet.soundId;
+    if (audioEngine_.executePlaySoundCommand(playCommand)) {
+      Serial.printf("PACKET play sound=%u seq=%u\n", packet.soundId, packet.sequence);
+    }
+    return;
+  }
+
+  if (packet.command == static_cast<uint8_t>(PlaySoundPacketCommand::Stop)) {
+    audioEngine_.stopCurrentPlayback(true);
+    Serial.printf("PACKET stop seq=%u\n", packet.sequence);
+    return;
+  }
+
+  if (packet.command == static_cast<uint8_t>(PlaySoundPacketCommand::Ping)) {
+    Serial.printf("PACKET pong seq=%u\n", packet.sequence);
+  }
+}
+
+void SerialInterface::handleIncomingTextByte(char c) {
+  if (c == '\r') {
+    return;
+  }
+  if (c == '\n') {
+    handleCommand(serialBuffer_);
+    serialBuffer_ = "";
+  } else {
+    serialBuffer_ += c;
+  }
+}
+
 void SerialInterface::poll() {
   while (Serial.available()) {
-    char c = static_cast<char>(Serial.read());
-    if (c == '\r') {
+    uint8_t byte = static_cast<uint8_t>(Serial.read());
+    if (packetParser_.isReceiving() || byte == PLAY_SOUND_PACKET_MAGIC) {
+      PlaySoundPacket packet;
+      PlaySoundPacketParser::Result result = packetParser_.pushByte(byte, packet);
+      if (result == PlaySoundPacketParser::Result::Complete) {
+        handlePacket(packet);
+      } else if (result == PlaySoundPacketParser::Result::Invalid) {
+        Serial.println("Discarded invalid trigger packet.");
+      }
       continue;
     }
-    if (c == '\n') {
-      handleCommand(serialBuffer_);
-      serialBuffer_ = "";
-    } else {
-      serialBuffer_ += c;
-    }
+
+    handleIncomingTextByte(static_cast<char>(byte));
   }
 }
 

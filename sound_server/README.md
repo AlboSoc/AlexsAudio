@@ -48,6 +48,8 @@ At startup the project:
 
 It also includes a tone generator for verifying that the audio path is alive independently of SD-file playback.
 
+In addition to the text CLI, the firmware now accepts small binary trigger packets on the same USB serial port.
+
 ## Expected Sound File Naming
 
 Examples:
@@ -72,6 +74,28 @@ Only the leading integer before the first `-` is used as the `sound_id`.
   - plays the matching WAV file for that ID through the WM8960 output path
 - `volume <0-100>`
   - sets the WM8960 output volume percentage live without reflashing
+
+## UART Trigger Packet
+
+The sound server now accepts a fixed-size trigger packet on the same serial port used for the text CLI.
+
+Packet layout:
+
+```text
+byte 0: magic    = 0xA5
+byte 1: version  = 0x01
+byte 2: command  = 0x01 play, 0x02 stop, 0x03 ping
+byte 3: soundId  = 0..255
+byte 4: sequence = sender-chosen rolling counter
+byte 5: checksum = xor of bytes 0..4
+```
+
+Notes:
+
+- valid `play` packets are converted into the same internal `PlaySoundCommand` used by `play <id>`
+- `stop` stops the current playback immediately
+- `ping` produces a simple serial log response for transport bring-up
+- normal text commands and binary packets can share the same serial port, but not at the same instant from two different host applications
 
 ## Currently Known-Good WAV Format
 
@@ -119,6 +143,32 @@ C:\Users\alanb\.platformio\penv\Scripts\platformio.exe run
 C:\Users\alanb\.platformio\penv\Scripts\platformio.exe run --target upload
 C:\Users\alanb\.platformio\penv\Scripts\platformio.exe device monitor -b 115200 --echo
 ```
+
+## WebSerial Test Page
+
+A single-page WebSerial test app lives at `tools/webserial_trigger.html`.
+
+Because WebSerial requires a secure context, serve the repo over localhost before opening the page. From the `AlexsAudio` repo root, one simple option is:
+
+```powershell
+py -m http.server 8000
+```
+
+Then open:
+
+```text
+http://localhost:8000/tools/webserial_trigger.html
+```
+
+Suggested test flow:
+
+1. Close any existing serial monitor so the browser can open the port.
+2. Click `Connect Serial Port`.
+3. Choose the ESP32 USB serial device.
+4. Click one of the `Play` buttons, or send `Ping` / `Stop`.
+5. Watch the log pane for `PACKET ...` responses from the firmware.
+
+The page currently speaks the same packet format described above and is meant as a bench bring-up tool for Phase 1 of the trigger transport work.
 
 ## Example session output
 

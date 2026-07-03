@@ -1,0 +1,389 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AlexsAudio UART Trigger</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f3efe6;
+      --panel: #fffaf2;
+      --ink: #1f2a30;
+      --muted: #6b7479;
+      --line: #d8cfbf;
+      --accent: #177245;
+      --accent-2: #b8842f;
+      --danger: #9a3d2d;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Georgia, "Times New Roman", serif;
+      background:
+        radial-gradient(circle at top left, rgba(184, 132, 47, 0.18), transparent 30%),
+        linear-gradient(180deg, #f7f2e8 0%, var(--bg) 100%);
+      color: var(--ink);
+    }
+    main {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 24px 18px 40px;
+    }
+    h1 {
+      margin: 0 0 8px;
+      font-size: clamp(2rem, 5vw, 3.5rem);
+      line-height: 0.95;
+      letter-spacing: -0.03em;
+    }
+    p, li, label, button, input {
+      font-family: "Trebuchet MS", Verdana, sans-serif;
+    }
+    .lede {
+      max-width: 60ch;
+      color: var(--muted);
+      margin-bottom: 24px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 18px;
+    }
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 18px;
+      box-shadow: 0 18px 50px rgba(64, 51, 31, 0.08);
+    }
+    .status {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: #efe7d5;
+      font-size: 0.95rem;
+      margin-bottom: 14px;
+    }
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--danger);
+    }
+    .dot.connected {
+      background: var(--accent);
+    }
+    .actions, .sound-grid {
+      display: grid;
+      gap: 10px;
+    }
+    .sound-grid {
+      grid-template-columns: repeat(auto-fit, minmax(135px, 1fr));
+      margin-top: 12px;
+    }
+    button {
+      border: 0;
+      border-radius: 12px;
+      padding: 12px 14px;
+      font-size: 0.98rem;
+      cursor: pointer;
+      background: var(--ink);
+      color: #fff;
+    }
+    button.secondary {
+      background: var(--accent-2);
+    }
+    button.ghost {
+      background: #e8decd;
+      color: var(--ink);
+    }
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.55;
+    }
+    .inline-form {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      margin-top: 12px;
+    }
+    input[type="number"] {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px;
+      font-size: 1rem;
+      background: #fff;
+    }
+    pre {
+      margin: 0;
+      white-space: pre-wrap;
+      word-break: break-word;
+      min-height: 240px;
+      max-height: 420px;
+      overflow: auto;
+      padding: 14px;
+      border-radius: 14px;
+      background: #1e241f;
+      color: #dce8d9;
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 0.9rem;
+    }
+    code {
+      font-family: Consolas, "Courier New", monospace;
+      background: #ece3d4;
+      padding: 0.1rem 0.35rem;
+      border-radius: 6px;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>AlexsAudio UART Trigger</h1>
+    <p class="lede">
+      This page sends fixed-size trigger packets over WebSerial to the sound server's existing USB serial port.
+      Packet format: <code>A5 01 cmd soundId seq checksum</code>, where checksum is the XOR of the first five bytes.
+    </p>
+
+    <div class="grid">
+      <section class="panel">
+        <div class="status">
+          <span class="dot" id="status-dot"></span>
+          <span id="status-text">Disconnected</span>
+        </div>
+
+        <div class="actions">
+          <button id="connect-btn">Connect Serial Port</button>
+          <button id="disconnect-btn" class="ghost" disabled>Disconnect</button>
+          <button id="ping-btn" class="secondary" disabled>Send Ping</button>
+          <button id="stop-btn" class="ghost" disabled>Send Stop</button>
+        </div>
+
+        <div class="sound-grid" id="sound-grid"></div>
+
+        <form class="inline-form" id="custom-form">
+          <input id="sound-id-input" type="number" min="0" max="255" step="1" value="0">
+          <button id="custom-play-btn" type="submit" disabled>Play Custom ID</button>
+        </form>
+      </section>
+
+      <section class="panel">
+        <p><strong>Notes</strong></p>
+        <ul>
+          <li>Use a Chromium-based browser with WebSerial support.</li>
+          <li>Close any serial monitor before connecting here. Only one app can own the port at a time.</li>
+          <li>The firmware still accepts normal text commands like <code>play 3</code> on the same port.</li>
+        </ul>
+        <pre id="log"></pre>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    const PACKET_MAGIC = 0xA5;
+    const PACKET_VERSION = 0x01;
+    const COMMAND_PLAY = 0x01;
+    const COMMAND_STOP = 0x02;
+    const COMMAND_PING = 0x03;
+    const BAUD_RATE = 115200;
+
+    const connectBtn = document.getElementById("connect-btn");
+    const disconnectBtn = document.getElementById("disconnect-btn");
+    const pingBtn = document.getElementById("ping-btn");
+    const stopBtn = document.getElementById("stop-btn");
+    const customForm = document.getElementById("custom-form");
+    const customPlayBtn = document.getElementById("custom-play-btn");
+    const soundIdInput = document.getElementById("sound-id-input");
+    const soundGrid = document.getElementById("sound-grid");
+    const logEl = document.getElementById("log");
+    const statusDot = document.getElementById("status-dot");
+    const statusText = document.getElementById("status-text");
+
+    let port = null;
+    let writer = null;
+    let reader = null;
+    let keepReading = false;
+    let sequence = 0;
+
+    function log(message) {
+      const stamp = new Date().toLocaleTimeString();
+      logEl.textContent += `[${stamp}] ${message}\n`;
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    function setConnected(connected) {
+      statusDot.classList.toggle("connected", connected);
+      statusText.textContent = connected ? "Connected" : "Disconnected";
+      disconnectBtn.disabled = !connected;
+      pingBtn.disabled = !connected;
+      stopBtn.disabled = !connected;
+      customPlayBtn.disabled = !connected;
+      for (const button of soundGrid.querySelectorAll("button")) {
+        button.disabled = !connected;
+      }
+    }
+
+    function checksum(bytes) {
+      return bytes.reduce((acc, value) => acc ^ value, 0);
+    }
+
+    function makePacket(command, soundId = 0) {
+      const packet = [
+        PACKET_MAGIC,
+        PACKET_VERSION,
+        command & 0xFF,
+        soundId & 0xFF,
+        sequence & 0xFF
+      ];
+      packet.push(checksum(packet));
+      sequence = (sequence + 1) & 0xFF;
+      return new Uint8Array(packet);
+    }
+
+    function packetHex(packet) {
+      return Array.from(packet)
+        .map((value) => value.toString(16).padStart(2, "0").toUpperCase())
+        .join(" ");
+    }
+
+    async function sendPacket(command, soundId = 0) {
+      if (!writer) {
+        log("Cannot send packet: not connected.");
+        return;
+      }
+
+      const packet = makePacket(command, soundId);
+      await writer.write(packet);
+      log(`TX ${packetHex(packet)}`);
+    }
+
+    async function startReader() {
+      const decoder = new TextDecoder();
+      keepReading = true;
+
+      while (port && port.readable && keepReading) {
+        reader = port.readable.getReader();
+        try {
+          while (keepReading) {
+            const { value, done } = await reader.read();
+            if (done) {
+              break;
+            }
+            if (value) {
+              log(`RX ${decoder.decode(value, { stream: true }).replace(/\r/g, "")}`);
+            }
+          }
+        } catch (error) {
+          log(`Reader error: ${error.message}`);
+        } finally {
+          reader.releaseLock();
+          reader = null;
+        }
+      }
+    }
+
+    async function connect() {
+      if (!("serial" in navigator)) {
+        log("WebSerial is not available in this browser.");
+        return;
+      }
+
+      try {
+        port = await navigator.serial.requestPort();
+        await port.open({ baudRate: BAUD_RATE });
+        writer = port.writable.getWriter();
+        setConnected(true);
+        log(`Connected at ${BAUD_RATE} baud.`);
+        startReader();
+      } catch (error) {
+        log(`Connect failed: ${error.message}`);
+      }
+    }
+
+    async function disconnect() {
+      keepReading = false;
+
+      try {
+        if (reader) {
+          await reader.cancel();
+        }
+      } catch (error) {
+        log(`Reader cancel warning: ${error.message}`);
+      }
+
+      try {
+        if (writer) {
+          writer.releaseLock();
+          writer = null;
+        }
+        if (port) {
+          await port.close();
+        }
+      } catch (error) {
+        log(`Disconnect warning: ${error.message}`);
+      } finally {
+        port = null;
+        setConnected(false);
+        log("Disconnected.");
+      }
+    }
+
+    function createSoundButtons() {
+      for (let soundId = 0; soundId <= 7; soundId += 1) {
+        const button = document.createElement("button");
+        button.className = soundId % 2 === 0 ? "" : "secondary";
+        button.disabled = true;
+        button.textContent = `Play ${soundId}`;
+        button.addEventListener("click", () => {
+          sendPacket(COMMAND_PLAY, soundId).catch((error) => {
+            log(`Send failed: ${error.message}`);
+          });
+        });
+        soundGrid.appendChild(button);
+      }
+    }
+
+    connectBtn.addEventListener("click", () => {
+      connect().catch((error) => {
+        log(`Connect failed: ${error.message}`);
+      });
+    });
+
+    disconnectBtn.addEventListener("click", () => {
+      disconnect().catch((error) => {
+        log(`Disconnect failed: ${error.message}`);
+      });
+    });
+
+    pingBtn.addEventListener("click", () => {
+      sendPacket(COMMAND_PING).catch((error) => {
+        log(`Ping failed: ${error.message}`);
+      });
+    });
+
+    stopBtn.addEventListener("click", () => {
+      sendPacket(COMMAND_STOP).catch((error) => {
+        log(`Stop failed: ${error.message}`);
+      });
+    });
+
+    customForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const soundId = Number.parseInt(soundIdInput.value, 10);
+      if (Number.isNaN(soundId) || soundId < 0 || soundId > 255) {
+        log("Custom sound ID must be between 0 and 255.");
+        return;
+      }
+
+      sendPacket(COMMAND_PLAY, soundId).catch((error) => {
+        log(`Custom send failed: ${error.message}`);
+      });
+    });
+
+    createSoundButtons();
+    log("Ready. Connect to the sound_server USB serial port to send trigger packets.");
+  </script>
+</body>
+</html>

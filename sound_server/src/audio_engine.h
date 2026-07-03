@@ -23,6 +23,7 @@ class AudioEngine {
   void printBanner() const;
   void setOutputVolumePercent(float percent);
   bool executePlaySoundCommand(const PlaySoundCommand &command);
+  void stopCurrentPlayback(bool printMessage);
   void setToneEnabled(bool enabled);
   bool isToneEnabled() const;
   void update();

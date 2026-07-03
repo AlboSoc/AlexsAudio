@@ -157,6 +157,11 @@ bool AudioEngine::executePlaySoundCommand(const PlaySoundCommand &command) {
   return startPlayback(command.soundId);
 }
 
+void AudioEngine::stopCurrentPlayback(bool printMessage) {
+  toneEnabled_ = false;
+  stopPlayback(printMessage);
+}
+
 void AudioEngine::setToneEnabled(bool enabled) {
   toneEnabled_ = enabled;
 }

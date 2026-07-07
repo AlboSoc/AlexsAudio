@@ -1,10 +1,14 @@
 #include "packet_executor.h"
 
+#include "latency_probe.h"
+
 namespace sound_server {
 
 void executeTriggerPacket(AudioEngine &audioEngine,
                           const PlaySoundPacket &packet,
                           const char *transportLabel) {
+  latency_probe::onPacketReceived(transportLabel, packet);
+
   if (packet.command == static_cast<uint8_t>(PlaySoundPacketCommand::Play)) {
     PlaySoundCommand playCommand;
     playCommand.soundId = packet.soundId;

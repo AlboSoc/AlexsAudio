@@ -7,8 +7,8 @@
 
 #include "AudioTools.h"
 #include "AudioTools/AudioCodecs/CodecWAV.h"
-#include "AudioTools/AudioLibs/WM8960Stream.h"
 
+#include "fixed_wm8960_stream.h"
 #include "play_sound_command.h"
 #include "sound_map.h"
 
@@ -34,19 +34,20 @@ class AudioEngine {
   void stopPlayback(bool printMessage);
 
   SPIClass sdSpi_{VSPI};
-  WM8960Stream audioOut_;
-  VolumeStream volumeOut_{audioOut_};
+  PersistentWm8960Stream audioOut_;
   SineWaveGenerator<int16_t> sineWave_{32000};
   GeneratedSoundStream<int16_t> toneStream_{sineWave_};
   StreamCopy toneCopier_{audioOut_, toneStream_};
   WAVDecoder wavDecoder_;
-  EncodedAudioStream wavStream_{&volumeOut_, &wavDecoder_};
+  EncodedAudioStream wavStream_{&audioOut_, &wavDecoder_};
   StreamCopy wavCopier_;
   File playbackFile_;
 
   const SoundMap *soundMap_ = nullptr;
   bool toneEnabled_ = false;
   bool playbackActive_ = false;
+  bool firstAudioCopyPending_ = false;
+  bool playbackPrimePending_ = false;
   int activePlaybackId_ = -1;
   float outputVolume_ = DEFAULT_OUTPUT_VOLUME;
 };

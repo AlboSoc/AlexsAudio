@@ -2,6 +2,7 @@
 
 #include "audio_engine.h"
 #include "esp_now_trigger_receiver.h"
+#include "latency_probe.h"
 #include "serial_interface.h"
 #include "sound_map.h"
 #include "uart_trigger_receiver.h"
@@ -19,17 +20,22 @@ sound_server::EspNowTriggerReceiver *espNowTriggerReceiver = nullptr;
 void setup() {
   Serial.begin(115200);
   delay(500);
+  sound_server::latency_probe::begin();
 
   // Build the heavier audio objects after Arduino runtime startup to avoid
   // early static-initialization crashes inside audio-tools.
   soundMap = new sound_server::SoundMap();
   audioEngine = new sound_server::AudioEngine();
   serialInterface = new sound_server::SerialInterface(*audioEngine, *soundMap);
-  uartTriggerReceiver = new sound_server::UartTriggerReceiver(*audioEngine);
+  if (sound_server::ENABLE_TRIGGER_UART) {
+    uartTriggerReceiver = new sound_server::UartTriggerReceiver(*audioEngine);
+  }
   espNowTriggerReceiver = new sound_server::EspNowTriggerReceiver(*audioEngine);
 
   audioEngine->printBanner();
-  uartTriggerReceiver->printConfig();
+  if (uartTriggerReceiver != nullptr) {
+    uartTriggerReceiver->printConfig();
+  }
 
   if (!audioEngine->beginSdCard()) {
     Serial.println("Check SD wiring, card formatting, and power.");
@@ -54,11 +60,15 @@ void setup() {
     Serial.println("ESP-NOW receiver initialization succeeded.");
   }
 
-  uartTriggerReceiver->begin();
+  if (uartTriggerReceiver != nullptr) {
+    uartTriggerReceiver->begin();
+  }
   serialInterface->printHelp();
 }
 
 void loop() {
+  sound_server::latency_probe::poll();
+
   if (serialInterface != nullptr) {
     serialInterface->poll();
   }

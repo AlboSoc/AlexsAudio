@@ -34,12 +34,14 @@ This lets us prove that the core hardware pieces can coexist on one ESP32 before
 - `SCK  -> GPIO 18`
 - `MISO -> GPIO 19`
 - `MOSI -> GPIO 23`
+- current runtime SPI clock: `10 MHz`
 
 ### Trigger UART
 
 - `RX   -> GPIO 16` (`RXD2` on the `ESP32 DEV KIT V1` board)
 - `TX   -> GPIO 17` (`TXD2` on the `ESP32 DEV KIT V1` board)
 - `115200 8N1`
+- currently disabled by default during ESP-NOW latency bring-up to avoid noise from a floating RX pin
 
 ### ESP-NOW
 
@@ -64,7 +66,7 @@ At startup the project:
 It also includes a tone generator for verifying that the audio path is alive independently of SD-file playback.
 
 In addition to the text CLI, the firmware now accepts small binary trigger packets on the same USB serial port.
-The same packet path is also active on the dedicated wired UART and over ESP-NOW.
+The same packet path is active over ESP-NOW, and can also be enabled on the dedicated wired UART when needed.
 
 ## Expected Sound File Naming
 
@@ -96,7 +98,7 @@ Only the leading integer before the first `-` is used as the `sound_id`.
 The sound server now accepts a fixed-size trigger packet on:
 
 - the USB serial port used for the text CLI and WebSerial bring-up
-- the dedicated wired trigger UART on `GPIO 16/17`
+- the dedicated wired trigger UART on `GPIO 16/17` when `ENABLE_TRIGGER_UART` is enabled
 - ESP-NOW on channel `1`
 
 Packet layout:
@@ -132,6 +134,23 @@ The most reliable playback seen so far is:
 The generated files in `sound_server/audio` are now the primary reference set.
 
 The firmware is happiest when files are converted into the shared baseline format before being copied to the SD card.
+
+The server runtime is now also configured for `22050 Hz`, so the playback path no longer starts from a mismatched default sample rate.
+
+## Latency Notes
+
+Recent latency work showed that:
+
+- trigger send time on the client is tiny
+- ESP-NOW transfer time is tiny
+- the dominant delay is inside the server audio-start path
+
+Two important details came out of that work:
+
+- the earlier `first-copy` marker was too late, because it sat after a potentially blocking `wavCopier.copy()` call
+- the server now logs both `first-copy-start` and `first-copy-end` so we can tell whether the delay is before the first copy or inside it
+
+The server also now uses a faster SD SPI clock and has the wired UART receiver disabled by default during ESP-NOW latency testing.
 
 ## Building The Runtime Sound Pack
 

@@ -8,12 +8,14 @@ This repository is the shared home for the AlexsAudio ESP32 audio bring-up work.
 
 *Current bench setup: the `trigger_client` is at the bottom right and uses ESP-NOW to request playback from the `sound_server`, which is the ESP32 on the upper-left side of the breadboard. The sound server is the board connected to the microSD card for file lookup and to the WM8960 audio hardware for speaker / audio output drive. The laptop screen is showing the browser-based WebSerial trigger console used for bench testing and manual control.*
 
-It currently contains three PlatformIO projects plus the shared design notes:
+It currently contains four PlatformIO projects plus the shared design notes:
 
 - `sd_card_bringup/`
   - standalone microSD hardware and filesystem bring-up
 - `sound_server/`
   - WM8960 + SD integration bring-up for the dedicated sound-server ESP32
+- `wm8960_wav_bringup/`
+  - minimal WM8960 + SD WAV playback diagnostic project
 - `trigger_client/`
   - embedded trigger sender that can drive the sound server over ESP-NOW or wired UART
   - [TWO_ESP32_AUDIO_ARCHITECTURE.md(TWO_ESP32_AUDIO_ARCHITECTURE.md)]
@@ -27,6 +29,7 @@ It currently contains three PlatformIO projects plus the shared design notes:
 AlexsAudio/
 |-- sd_card_bringup/
 |-- sound_server/
+|-- wm8960_wav_bringup/
 |-- trigger_client/
 |-- shared/
 |-- COMMUNICATION_TRIGGER_PLAN.md

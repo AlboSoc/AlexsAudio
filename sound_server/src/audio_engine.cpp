@@ -1,5 +1,6 @@
 #include "audio_engine.h"
 
+#include "latency_probe.h"
 #include "sound_server_config.h"
 
 namespace sound_server {
@@ -17,10 +18,10 @@ bool AudioEngine::beginAudio() {
   Wire.begin(WM8960_SDA_PIN, WM8960_SCL_PIN);
   Wire.setClock(1000);
 
-  AudioLogger::instance().begin(Serial, AudioLogger::Warning);
+  AudioLogger::instance().begin(Serial, AudioLogger::Error);
 
   auto config = audioOut_.defaultConfig(TX_MODE);
-  config.sample_rate = SAMPLE_RATE;
+  config.sample_rate = WM8960_STARTUP_SAMPLE_RATE;
   config.channels = CHANNELS;
   config.bits_per_sample = BITS_PER_SAMPLE;
   config.default_volume = DEFAULT_OUTPUT_VOLUME;
@@ -29,15 +30,13 @@ bool AudioEngine::beginAudio() {
   config.pin_ws = WM8960_WS_PIN;
   config.pin_data = WM8960_DATA_PIN;
 
-  if (!audioOut_.begin(config)) {
+  if (!audioOut_.beginPersistent(config)) {
     Serial.println("WM8960 begin failed.");
     return false;
   }
 
-  sineWave_.begin(CHANNELS, SAMPLE_RATE, N_B4);
-  volumeOut_.setVolume(1.0);
-  volumeOut_.begin(config);
-  audioOut_.setVolumeOut(outputVolume_);
+  sineWave_.begin(CHANNELS, WM8960_STARTUP_SAMPLE_RATE, N_B4);
+  audioOut_.setPersistentOutputVolume(outputVolume_);
   return true;
 }
 
@@ -57,6 +56,20 @@ void AudioEngine::printBanner() const {
   Serial.printf("SD SCK         : GPIO %u\n", SD_SCK_PIN);
   Serial.printf("SD MISO        : GPIO %u\n", SD_MISO_PIN);
   Serial.printf("SD MOSI        : GPIO %u\n", SD_MOSI_PIN);
+  Serial.printf("SD SPI         : %lu Hz\n", static_cast<unsigned long>(SD_SPI_FREQUENCY_HZ));
+  Serial.printf("WM8960 startup : %lu Hz, %u ch, %u-bit\n",
+                static_cast<unsigned long>(WM8960_STARTUP_SAMPLE_RATE),
+                CHANNELS,
+                BITS_PER_SAMPLE);
+  Serial.printf("WAV target     : %lu Hz, %u ch, %u-bit\n",
+                static_cast<unsigned long>(SAMPLE_RATE),
+                CHANNELS,
+                BITS_PER_SAMPLE);
+  Serial.printf("Trigger UART   : %s\n", ENABLE_TRIGGER_UART ? "enabled" : "disabled");
+  if (ENABLE_LATENCY_MARKER_PINS) {
+    Serial.printf("Latency RX pin  : GPIO %u\n", LATENCY_RX_MARKER_PIN);
+    Serial.printf("Latency audio pin: GPIO %u\n", LATENCY_FIRST_AUDIO_MARKER_PIN);
+  }
 }
 
 void AudioEngine::setOutputVolumePercent(float percent) {
@@ -67,7 +80,7 @@ void AudioEngine::setOutputVolumePercent(float percent) {
   }
 
   outputVolume_ = percent / 100.0f;
-  audioOut_.setVolumeOut(outputVolume_);
+  audioOut_.setPersistentOutputVolume(outputVolume_);
   Serial.printf("Output volume set to %.0f%%\n", percent);
 }
 
@@ -94,6 +107,8 @@ void AudioEngine::stopPlayback(bool printMessage) {
   wavStream_.end();
   playbackFile_.close();
   playbackActive_ = false;
+  firstAudioCopyPending_ = false;
+  playbackPrimePending_ = false;
 
   if (printMessage) {
     if (activePlaybackId_ >= 0) {
@@ -129,7 +144,9 @@ bool AudioEngine::startPlayback(uint8_t id) {
   String path = "/";
   path += soundMap_->files[id];
 
+  const uint32_t startMicros = micros();
   playbackFile_ = SD.open(path.c_str(), FILE_READ);
+  const uint32_t afterOpenMicros = micros();
   if (!playbackFile_) {
     Serial.printf("Failed to open %s\n", path.c_str());
     return false;
@@ -140,10 +157,18 @@ bool AudioEngine::startPlayback(uint8_t id) {
     playbackFile_.close();
     return false;
   }
+  const uint32_t afterDecoderMicros = micros();
 
   wavCopier_.begin(wavStream_, playbackFile_);
   playbackActive_ = true;
+  firstAudioCopyPending_ = true;
+  playbackPrimePending_ = true;
   activePlaybackId_ = id;
+
+  latency_probe::onPlaybackArmed(id,
+                                 afterOpenMicros - startMicros,
+                                 afterDecoderMicros - afterOpenMicros,
+                                 afterDecoderMicros - startMicros);
 
   Serial.printf("Playing sound ID %u -> %s\n", id, soundMap_->files[id].c_str());
   return true;
@@ -172,7 +197,24 @@ bool AudioEngine::isToneEnabled() const {
 
 void AudioEngine::update() {
   if (playbackActive_) {
-    if (!wavCopier_.copy()) {
+    if (playbackPrimePending_ && activePlaybackId_ >= 0) {
+      Serial.printf("LATENCY note sound=%d entering first wavCopier.copy()\n", activePlaybackId_);
+      playbackPrimePending_ = false;
+    }
+
+    const uint32_t copyStartMicros = micros();
+    const bool measureFirstCopy = firstAudioCopyPending_ && activePlaybackId_ >= 0;
+    if (measureFirstCopy) {
+      latency_probe::onFirstAudioCopyStart(static_cast<uint8_t>(activePlaybackId_));
+      firstAudioCopyPending_ = false;
+    }
+    bool copyOk = wavCopier_.copy();
+    if (measureFirstCopy) {
+      latency_probe::onFirstAudioCopyEnd(static_cast<uint8_t>(activePlaybackId_),
+                                         micros() - copyStartMicros,
+                                         copyOk);
+    }
+    if (!copyOk) {
       stopPlayback(true);
     }
   } else if (toneEnabled_) {

@@ -1,8 +1,16 @@
 param(
     [string]$SourceDir = ".\sound_server\audio_originals",
-    [string]$OutputDir = ".\sound_server\audio",
+    [string]$OutputDir = "",
     [int]$SampleRate = 22050
 )
+
+if ([string]::IsNullOrWhiteSpace($OutputDir)) {
+    $OutputDir = if ($SampleRate -eq 22050) {
+        ".\sound_server\audio"
+    } else {
+        ".\sound_server\audio_$SampleRate"
+    }
+}
 
 $ffmpeg = Get-Command ffmpeg -ErrorAction SilentlyContinue
 if (-not $ffmpeg) {

@@ -97,7 +97,7 @@ WavMetadata inspectWavFile(const String &path) {
 bool isKnownGoodFormat(const WavMetadata &meta) {
   return meta.riffOk && meta.waveOk && meta.fmtFound && meta.dataFound &&
          meta.audioFormat == 1 && meta.channels == 2 &&
-         meta.sampleRate == 22050 && meta.bitsPerSample == 16;
+         meta.sampleRate == 44100 && meta.bitsPerSample == 16;
 }
 
 void printWavMetadata(uint8_t id, const String &filename, const WavMetadata &meta) {

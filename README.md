@@ -18,7 +18,7 @@ It currently contains four PlatformIO projects plus the shared design notes:
   - minimal WM8960 + SD WAV playback diagnostic project
 - `trigger_client/`
   - embedded trigger sender that can drive the sound server over ESP-NOW or wired UART
-  - [TWO_ESP32_AUDIO_ARCHITECTURE.md(TWO_ESP32_AUDIO_ARCHITECTURE.md)]
+  - [TWO_ESP32_AUDIO_ARCHITECTURE.md](TWO_ESP32_AUDIO_ARCHITECTURE.md)
   - higher-level notes about the overall system direction
 - [COMMUNICATION_TRIGGER_PLAN.md](COMMUNICATION_TRIGGER_PLAN.md)
   - phased plan for transport-neutral trigger handling over CLI, `UART`, and `ESP-NOW`
@@ -50,6 +50,14 @@ The current work is centered on building out the sound-server in stable vertical
 6. drive the sound server from a second ESP32 client over wired UART or ESP-NOW
 7. harden transport behavior for the intended game integration
 
+The current known-good playback baseline is:
+
+- WM8960 + SD card on the dedicated `sound_server`
+- WAV files on SD as `44100 Hz`, `stereo`, `16-bit PCM`
+- trigger commands sent from `trigger_client` over `ESP-NOW`
+
+With that configuration, playback is now sounding clean and feels responsive in bench testing.
+
 ## Working In This Repo
 
 Each subproject is a separate PlatformIO project. Build, upload, and monitor from the corresponding folder.
@@ -76,6 +84,7 @@ C:\Users\alanb\.platformio\penv\Scripts\platformio.exe device monitor -b 115200 
 
 ## Next Steps
 
-- verify two-ESP32 ESP-NOW bring-up end to end in the normal demo setup
-- decide whether wired UART remains only a bench fallback or stays as a supported field option
-- add any needed acknowledgement, retry, or duplicate-suppression behavior once transport testing shows the real needs
+- package the current working `trigger_client` -> `sound_server` ESP-NOW flow as a clean demo for Alex
+- decide whether wired UART / RS-485 remains only a fallback or stays as a supported transport option
+- decide whether to keep broadcast ESP-NOW for bring-up only or move to explicit peer MACs for the real build
+- move the working audio hardware off the most fragile breadboard wiring when convenient, keeping the proven I2C pull-ups

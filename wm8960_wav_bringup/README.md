@@ -4,7 +4,7 @@ This is a deliberately small PlatformIO project for isolating WM8960 WAV playbac
 
 The intent is to answer a narrow question:
 
-- can this ESP32 + WM8960 + SD hardware play fixed-format `22050 Hz`, stereo, `16-bit` WAV files cleanly?
+- can this ESP32 + WM8960 + SD hardware play fixed-format `44100 Hz`, stereo, `16-bit` WAV files cleanly?
 
 It removes the trigger transport, sound-map layer, and other sound-server concerns so we can focus on:
 
@@ -23,6 +23,11 @@ It removes the trigger transport, sound-map layer, and other sound-server concer
 - `GPIO 26` -> `LRCLK` / `WS`
 - `GPIO 25` -> `DIN`
 
+Practical wiring note:
+
+- on the breadboard setup, explicit `3.3 V` pull-ups on `SDA` and `SCL` helped the WM8960 behave reliably
+- this is worth treating as part of the bring-up recipe, especially with short Dupont wires and a breadboard
+
 ### microSD
 
 - `GPIO 5` -> `CS`
@@ -36,7 +41,7 @@ At boot, the firmware:
 
 1. initializes Serial at `115200`
 2. initializes the SD card
-3. initializes the WM8960 at fixed `22050 Hz`, `2 ch`, `16-bit`
+3. initializes the WM8960 at fixed `44100 Hz`, `2 ch`, `16-bit`
 4. exposes a small serial command interface
 
 The project supports two WM8960 modes:
@@ -45,11 +50,10 @@ The project supports two WM8960 modes:
   - keeps the codec initialized once and only updates I2S-side audio info
 - `reinit`
   - allows the WAV header notification path to reinitialize the codec
-- `legacy`
-  - recreates the older known-good style more closely:
-    plain WM8960 startup at `44100 Hz`, lower default output volume, then let the WAV header reconfigure playback
 
-This should help answer whether the persistent noise is tied specifically to the fixed one-time initialization approach.
+This is now mainly a regression-check and isolation project for the known-good `44100 Hz` path used by the main `sound_server`.
+
+WM8960 library debug logging is now off by default in this project so normal runs stay quiet.
 
 ## Commands
 
@@ -64,7 +68,6 @@ This should help answer whether the persistent noise is tied specifically to the
 - `volume <0-100>`
 - `mode fixed`
 - `mode reinit`
-- `mode legacy`
 
 ## Build And Flash
 
@@ -82,12 +85,10 @@ C:\Users\alanb\.platformio\penv\Scripts\platformio.exe device monitor -b 115200 
 3. Run `list` and identify a known-good WAV file on the SD card.
 4. Run `play <file>` in `mode fixed`.
 5. Run `mode reinit`, then replay the same file.
-6. Run `mode legacy`, then replay the same file.
 6. Compare:
    - tone clean / WAV noisy
    - both noisy
    - fixed noisy but reinit clean
-   - legacy clean while fixed/reinit are noisy
    - both clean
 
 That matrix should tell us much more quickly whether the remaining issue is:

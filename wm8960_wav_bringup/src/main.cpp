@@ -11,6 +11,7 @@ namespace {
 
 constexpr uint8_t WM8960_SDA_PIN = 22;
 constexpr uint8_t WM8960_SCL_PIN = 21;
+constexpr uint32_t WM8960_I2C_FREQUENCY_HZ = 100000;
 constexpr uint8_t WM8960_BCLK_PIN = 27;
 constexpr uint8_t WM8960_WS_PIN = 26;
 constexpr uint8_t WM8960_DATA_PIN = 25;
@@ -21,16 +22,14 @@ constexpr uint8_t SD_MISO_PIN = 19;
 constexpr uint8_t SD_MOSI_PIN = 23;
 
 constexpr uint32_t SD_SPI_FREQUENCY_HZ = 1000000;
-constexpr uint32_t FIXED_SAMPLE_RATE = 22050;
-constexpr uint32_t LEGACY_SAMPLE_RATE = 44100;
+constexpr uint32_t FIXED_SAMPLE_RATE = 44100;
 constexpr uint8_t CHANNELS = 2;
 constexpr uint8_t BITS_PER_SAMPLE = 16;
-constexpr float DEFAULT_OUTPUT_VOLUME = 0.5f;
+constexpr float DEFAULT_OUTPUT_VOLUME = 1.0f;
 
 enum class AudioMode {
-  Fixed22050,
-  Reinit22050,
-  Legacy44100,
+  Fixed44100,
+  Reinit44100,
 };
 
 class BringupWm8960Stream : public audio_tools::WM8960Stream {
@@ -100,27 +99,26 @@ String currentFileName;
 bool playbackActive = false;
 bool toneEnabled = false;
 float outputVolume = DEFAULT_OUTPUT_VOLUME;
-AudioMode currentMode = AudioMode::Fixed22050;
+AudioMode currentMode = AudioMode::Fixed44100;
 bool audioHardwareActive = false;
 
 const char *modeName(AudioMode mode) {
   switch (mode) {
-    case AudioMode::Fixed22050:
-      return "fixed-22050";
-    case AudioMode::Reinit22050:
-      return "reinit-22050";
-    case AudioMode::Legacy44100:
-      return "legacy-44100";
+    case AudioMode::Fixed44100:
+      return "fixed-44100";
+    case AudioMode::Reinit44100:
+      return "reinit-44100";
   }
   return "unknown";
 }
 
 uint32_t baseSampleRate(AudioMode mode) {
-  return mode == AudioMode::Legacy44100 ? LEGACY_SAMPLE_RATE : FIXED_SAMPLE_RATE;
+  (void)mode;
+  return FIXED_SAMPLE_RATE;
 }
 
 bool modeUsesFixedInit(AudioMode mode) {
-  return mode == AudioMode::Fixed22050;
+  return mode == AudioMode::Fixed44100;
 }
 
 audio_tools::WM8960Config makeAudioConfig(uint32_t sampleRate) {
@@ -226,9 +224,8 @@ void printHelp() {
   Serial.println("  tone on       - enable WM8960 test tone");
   Serial.println("  tone off      - disable WM8960 test tone");
   Serial.println("  volume <0-100> - set WM8960 output volume percentage");
-  Serial.println("  mode fixed    - keep WM8960 initialized once at 22050 Hz");
-  Serial.println("  mode reinit   - allow WAV header to reinitialize WM8960 from 22050 Hz");
-  Serial.println("  mode legacy   - recreate the older 44100 Hz plain WM8960 startup path");
+  Serial.println("  mode fixed    - keep WM8960 initialized once at 44100 Hz");
+  Serial.println("  mode reinit   - allow WAV header to reinitialize WM8960 at 44100 Hz");
 }
 
 void handleCommand(String command) {
@@ -295,21 +292,14 @@ void handleCommand(String command) {
   if (command.equalsIgnoreCase("mode fixed")) {
     stopPlayback(false);
     toneEnabled = false;
-    (void)reconfigureAudioHardware(AudioMode::Fixed22050);
+    (void)reconfigureAudioHardware(AudioMode::Fixed44100);
     return;
   }
 
   if (command.equalsIgnoreCase("mode reinit")) {
     stopPlayback(false);
     toneEnabled = false;
-    (void)reconfigureAudioHardware(AudioMode::Reinit22050);
-    return;
-  }
-
-  if (command.equalsIgnoreCase("mode legacy")) {
-    stopPlayback(false);
-    toneEnabled = false;
-    (void)reconfigureAudioHardware(AudioMode::Legacy44100);
+    (void)reconfigureAudioHardware(AudioMode::Reinit44100);
     return;
   }
 
@@ -345,7 +335,7 @@ void setup() {
   AudioLogger::instance().begin(Serial, AudioLogger::Error);
 
   Wire.begin(WM8960_SDA_PIN, WM8960_SCL_PIN);
-  Wire.setClock(1000);
+  Wire.setClock(WM8960_I2C_FREQUENCY_HZ);
 
   sdSpi.begin(SD_SCK_PIN, SD_MISO_PIN, SD_MOSI_PIN, SD_CS_PIN);
   if (!SD.begin(SD_CS_PIN, sdSpi, SD_SPI_FREQUENCY_HZ)) {
@@ -360,6 +350,7 @@ void setup() {
 
   Serial.printf("WM8960 I2C SDA : GPIO %u\n", WM8960_SDA_PIN);
   Serial.printf("WM8960 I2C SCL : GPIO %u\n", WM8960_SCL_PIN);
+  Serial.printf("WM8960 I2C     : %lu Hz\n", static_cast<unsigned long>(WM8960_I2C_FREQUENCY_HZ));
   Serial.printf("WM8960 I2S BCLK: GPIO %u\n", WM8960_BCLK_PIN);
   Serial.printf("WM8960 I2S WS  : GPIO %u\n", WM8960_WS_PIN);
   Serial.printf("WM8960 I2S DATA: GPIO %u\n", WM8960_DATA_PIN);
@@ -372,7 +363,6 @@ void setup() {
                 static_cast<unsigned long>(FIXED_SAMPLE_RATE),
                 CHANNELS,
                 BITS_PER_SAMPLE);
-  Serial.printf("Legacy start   : %lu Hz\n", static_cast<unsigned long>(LEGACY_SAMPLE_RATE));
   Serial.printf("Default volume : %.0f%%\n", DEFAULT_OUTPUT_VOLUME * 100.0f);
   Serial.printf("Default WM8960 mode: %s\n", modeName(currentMode));
   printHelp();

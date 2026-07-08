@@ -28,6 +28,12 @@ This lets us prove that the core hardware pieces can coexist on one ESP32 before
 - `I2S WS   -> GPIO 26`
 - `I2S DATA -> GPIO 25`
 
+Practical wiring note:
+
+- on the breadboard setup, adding explicit `3.3 V` pull-ups on `SDA` and `SCL` materially improved reliability
+- the WM8960 breakout already has pull-ups, but the bench wiring behaved better with stronger external pull-ups as well
+- if this setup is rebuilt, include the pull-ups from the start rather than relying on long Dupont wiring alone
+
 ### microSD over SPI
 
 - `CS   -> GPIO 5`
@@ -123,19 +129,17 @@ Notes:
 
 ## Currently Known-Good WAV Format
 
-The most reliable playback seen so far is:
+The current working baseline is:
 
 - PCM WAV (`fmt=1`)
-- `22050 Hz`
+- `44100 Hz`
 - `stereo`
 - `16-bit`
 - minimal header with an easy-to-find `data` chunk
 
-The generated files in `sound_server/audio` are now the primary reference set.
+The generated files in `sound_server/audio_44100` are now the primary reference set.
 
-The firmware is happiest when files are converted into the shared baseline format before being copied to the SD card.
-
-The server runtime is now also configured for `22050 Hz`, so the playback path no longer starts from a mismatched default sample rate.
+The firmware is now configured to stay at `44100 Hz` throughout startup and playback, which avoids the earlier problematic `22050 Hz` runtime path.
 
 ## Latency Notes
 
@@ -151,6 +155,9 @@ Two important details came out of that work:
 - the server now logs both `first-copy-start` and `first-copy-end` so we can tell whether the delay is before the first copy or inside it
 
 The server also now uses a faster SD SPI clock and has the wired UART receiver disabled by default during ESP-NOW latency testing.
+
+The dedicated latency serial logs and marker pins are now disabled by default in normal builds.
+If latency investigation is needed again, re-enable them in `src/sound_server_config.h`.
 
 ## Building The Runtime Sound Pack
 
@@ -168,11 +175,19 @@ By default it reads from `.\sound_server\audio_originals` and writes the generat
 
 This keeps the compressed source assets and the firmware-ready WAV outputs separate and reproducible.
 
+For the current setup, the preferred runtime pack lives in `.\sound_server\audio_44100`.
+
+The current preferred command is:
+
+```powershell
+.\tools\convert_audio_originals.ps1 -SampleRate 44100
+```
+
 It uses `ffmpeg` to:
 
 - strip metadata
 - force `stereo`
-- force `22050 Hz`
+- force the requested sample rate
 - force `16-bit PCM`
 
 ## Build And Run
@@ -213,7 +228,7 @@ The page currently speaks the same packet format described above and is meant as
 
 ## Example session output
 
-Here's some example output from running this:
+Here's some example output from an earlier debug-heavy run:
 
 ```
 PS C:\Alan\code\audio\AlexsAudio\sound_server> C:\Users\alanb\.platformio\penv\Scripts\platformio.exe device monitor -b 115200 --echo
@@ -340,6 +355,6 @@ Commands:
 
 The next useful upgrades for this project are:
 
-- confirm packet-triggered playback behaves reliably across the full sound set over both wired UART and ESP-NOW
+- integrate the working trigger-and-playback path into a small game-facing demo flow
 - decide whether the sound server should emit any reply or acknowledgement traffic on either transport
 - decide whether to keep the current broadcast ESP-NOW bring-up mode or tighten it to explicit peer MACs

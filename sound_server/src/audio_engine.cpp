@@ -5,6 +5,10 @@
 
 namespace sound_server {
 
+namespace {
+constexpr uint32_t WM8960_I2C_FREQUENCY_HZ = 100000;
+}
+
 bool AudioEngine::beginSdCard() {
   sdSpi_.begin(SD_SCK_PIN, SD_MISO_PIN, SD_MOSI_PIN, SD_CS_PIN);
   if (!SD.begin(SD_CS_PIN, sdSpi_, SD_SPI_FREQUENCY_HZ)) {
@@ -16,26 +20,30 @@ bool AudioEngine::beginSdCard() {
 
 bool AudioEngine::beginAudio() {
   Wire.begin(WM8960_SDA_PIN, WM8960_SCL_PIN);
-  Wire.setClock(1000);
+  Wire.setClock(WM8960_I2C_FREQUENCY_HZ);
 
   AudioLogger::instance().begin(Serial, AudioLogger::Error);
 
-  auto config = audioOut_.defaultConfig(TX_MODE);
-  config.sample_rate = WM8960_STARTUP_SAMPLE_RATE;
-  config.channels = CHANNELS;
-  config.bits_per_sample = BITS_PER_SAMPLE;
-  config.default_volume = DEFAULT_OUTPUT_VOLUME;
-  config.wire = &Wire;
-  config.pin_bck = WM8960_BCLK_PIN;
-  config.pin_ws = WM8960_WS_PIN;
-  config.pin_data = WM8960_DATA_PIN;
+  auto startupConfig = audioOut_.defaultConfig(TX_MODE);
+  startupConfig.sample_rate = WM8960_STARTUP_SAMPLE_RATE;
+  startupConfig.channels = CHANNELS;
+  startupConfig.bits_per_sample = BITS_PER_SAMPLE;
+  startupConfig.default_volume = DEFAULT_OUTPUT_VOLUME;
+  startupConfig.i2c_retry_count = WM8960_I2C_RETRY_COUNT;
+  startupConfig.wire = &Wire;
+  startupConfig.pin_bck = WM8960_BCLK_PIN;
+  startupConfig.pin_ws = WM8960_WS_PIN;
+  startupConfig.pin_data = WM8960_DATA_PIN;
 
-  if (!audioOut_.beginPersistent(config)) {
+  auto runtimeConfig = startupConfig;
+  runtimeConfig.sample_rate = SAMPLE_RATE;
+
+  if (!audioOut_.beginPersistent(startupConfig, runtimeConfig)) {
     Serial.println("WM8960 begin failed.");
     return false;
   }
 
-  sineWave_.begin(CHANNELS, WM8960_STARTUP_SAMPLE_RATE, N_B4);
+  sineWave_.begin(CHANNELS, SAMPLE_RATE, N_B4);
   audioOut_.setPersistentOutputVolume(outputVolume_);
   return true;
 }
@@ -49,6 +57,7 @@ void AudioEngine::printBanner() const {
   Serial.println("=== AlexsAudio Sound Server Bring-Up ===");
   Serial.printf("WM8960 I2C SDA : GPIO %u\n", WM8960_SDA_PIN);
   Serial.printf("WM8960 I2C SCL : GPIO %u\n", WM8960_SCL_PIN);
+  Serial.printf("WM8960 I2C     : %lu Hz\n", static_cast<unsigned long>(WM8960_I2C_FREQUENCY_HZ));
   Serial.printf("WM8960 I2S BCLK: GPIO %u\n", WM8960_BCLK_PIN);
   Serial.printf("WM8960 I2S WS  : GPIO %u\n", WM8960_WS_PIN);
   Serial.printf("WM8960 I2S DATA: GPIO %u\n", WM8960_DATA_PIN);
@@ -61,6 +70,11 @@ void AudioEngine::printBanner() const {
                 static_cast<unsigned long>(WM8960_STARTUP_SAMPLE_RATE),
                 CHANNELS,
                 BITS_PER_SAMPLE);
+  Serial.printf("WM8960 runtime : %lu Hz, %u ch, %u-bit\n",
+                static_cast<unsigned long>(SAMPLE_RATE),
+                CHANNELS,
+                BITS_PER_SAMPLE);
+  Serial.printf("WM8960 retries : %lu\n", static_cast<unsigned long>(WM8960_I2C_RETRY_COUNT));
   Serial.printf("WAV target     : %lu Hz, %u ch, %u-bit\n",
                 static_cast<unsigned long>(SAMPLE_RATE),
                 CHANNELS,
@@ -136,6 +150,17 @@ bool AudioEngine::startPlayback(uint8_t id) {
                   meta.channels,
                   meta.bitsPerSample,
                   meta.dataFound ? "" : ", missing data chunk");
+
+    if (meta.sampleRate != SAMPLE_RATE ||
+        meta.channels != CHANNELS ||
+        meta.bitsPerSample != BITS_PER_SAMPLE) {
+      Serial.printf("Refusing sound ID %u because it is not the fixed playback format (%lu Hz, %u ch, %u-bit)\n",
+                    id,
+                    static_cast<unsigned long>(SAMPLE_RATE),
+                    CHANNELS,
+                    BITS_PER_SAMPLE);
+      return false;
+    }
   }
 
   stopPlayback(false);
@@ -198,7 +223,9 @@ bool AudioEngine::isToneEnabled() const {
 void AudioEngine::update() {
   if (playbackActive_) {
     if (playbackPrimePending_ && activePlaybackId_ >= 0) {
-      Serial.printf("LATENCY note sound=%d entering first wavCopier.copy()\n", activePlaybackId_);
+      if (ENABLE_LATENCY_DEBUG_LOGS) {
+        Serial.printf("LATENCY note sound=%d entering first wavCopier.copy()\n", activePlaybackId_);
+      }
       playbackPrimePending_ = false;
     }
 

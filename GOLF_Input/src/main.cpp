@@ -1,12 +1,12 @@
 // GLOW GOLF Script by Alex Johansson, Sheffield, 2023
-// AUDIO INTEGRATION — BLE keyboard trigger path
+// AUDIO INTEGRATION — ESP-NOW trigger packets for AlexsAudio sound server
 
 #include <Arduino.h>
 #include "MultiTapButton.h"
 #include "SimpleTimer.h"
+#include "audio_trigger_sender.h"
 #include <FastLED.h>
 #include <MapHandler.cpp>
-#include <BleKeyboard.h>
 
 #define DEBUG Serial.printf("line %d\n", __LINE__);
 
@@ -41,8 +41,7 @@
 #define SOUND_LOSE 7
 
 bool soundArmed[8] = {false, true, true, true, true, true, true, true};
-const char soundKeys[] = {'0', '1', '2', '3', '4', '5', '6', '7'};
-BleKeyboard bleKeyboard("Glow Golf Audio", "GlowGolf", 100);
+AudioTriggerSender audioTriggerSender;
 
 // MultiTapButton button(BUTTON_1_PIN, LOW);
 CRGB leds[NUMPIXELS_1];
@@ -115,8 +114,14 @@ bool audioConnected();
 
 void setupAudio()
 {
-	bleKeyboard.begin();
-	Serial.println("BLE Audio: starting...");
+	if (audioTriggerSender.begin())
+	{
+		audioTriggerSender.printBanner();
+	}
+	else
+	{
+		Serial.println("Audio trigger: ESP-NOW unavailable.");
+	}
 }
 
 void triggerSound(byte soundID)
@@ -128,16 +133,18 @@ void triggerSound(byte soundID)
 	if (!audioConnected())
 	{
 		return;
-	} // Silent fail if not paired
+	} // Silent fail if sender is not ready
 	if (!soundArmed[soundID])
 	{
 		return;
 	} // Already fired, not re-armed yet
 
-	bleKeyboard.print(soundKeys[soundID]);
-	soundArmed[soundID] = false;
-	Serial.print("Audio trigger: key ");
-	Serial.println(soundKeys[soundID]);
+	if (audioTriggerSender.sendPlaySound(soundID))
+	{
+		soundArmed[soundID] = false;
+		Serial.print("Audio trigger: sound ");
+		Serial.println(soundID);
+	}
 }
 
 void armSound(byte soundID)
@@ -159,11 +166,11 @@ void armAllSounds()
 
 bool audioConnected()
 {
-	return bleKeyboard.isConnected();
+	return audioTriggerSender.isReady();
 }
 
 // =============================================================================
-// SETUP — BLE keyboard initialises here
+// SETUP — audio trigger sender initialises here
 // =============================================================================
 
 void setup()

@@ -48,7 +48,7 @@ void ButtonTrigger::printConfig() const {
 void ButtonTrigger::handlePressed(const ButtonState &button) {
   const uint32_t detectMicros = micros();
   pulseMarker(BUTTON_DETECT_MARKER_PIN, detectPulseActive_, detectPulseDeadlineMs_);
-  bool ok = packetSender_.sendPlaySound(button.soundId);
+  bool ok = packetSender_.sendPlaySound(button.soundId+4);
   const uint32_t sentMicros = micros();
   pulseMarker(SEND_COMPLETE_MARKER_PIN, sendPulseActive_, sendPulseDeadlineMs_);
 

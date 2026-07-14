@@ -126,7 +126,7 @@ void setupAudio()
 
 void triggerSound(byte soundID)
 {
-	if (soundID < 1 || soundID > 7)
+	if (soundID < 0 || soundID > 7)
 	{
 		return;
 	} // Bounds check
@@ -436,8 +436,7 @@ void winState(int ballWinPos)
 		// leds[(holePosition - 1) - 3] = CRGB::White;
 		// leds[(holePosition - 1) - 3 - 1] = CRGB::Black;
 		// FastLED.show();
-		
-	}
+		}
 
 	delay(350);
 

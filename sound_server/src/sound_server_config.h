@@ -16,12 +16,12 @@ constexpr uint8_t SD_MISO_PIN = 19;
 constexpr uint8_t SD_MOSI_PIN = 23;
 
 constexpr uint8_t MAX_SOUND_ID = 7;
-constexpr uint32_t SD_SPI_FREQUENCY_HZ = 1000000;
+constexpr uint32_t SD_SPI_FREQUENCY_HZ = 10000000;
 constexpr uint32_t SAMPLE_RATE = 44100;
 constexpr uint32_t WM8960_STARTUP_SAMPLE_RATE = 44100;
 constexpr uint8_t CHANNELS = 2;
 constexpr uint8_t BITS_PER_SAMPLE = 16;
-constexpr float DEFAULT_OUTPUT_VOLUME = 1.0f;
+constexpr float DEFAULT_OUTPUT_VOLUME = 0.94f;  //0.94 == 0 dB
 constexpr uint32_t WM8960_I2C_RETRY_COUNT = 3;
 
 constexpr uint8_t TRIGGER_UART_RX_PIN = 16;

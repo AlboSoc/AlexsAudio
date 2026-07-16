@@ -29,6 +29,7 @@ bool AudioEngine::beginAudio() {
   startupConfig.channels = CHANNELS;
   startupConfig.bits_per_sample = BITS_PER_SAMPLE;
   startupConfig.default_volume = DEFAULT_OUTPUT_VOLUME;
+  startupConfig.features = WM8960_FEATURE_SPEAKER | WM8960_FEATURE_HEADPHONE;
   startupConfig.i2c_retry_count = WM8960_I2C_RETRY_COUNT;
   startupConfig.wire = &Wire;
   startupConfig.pin_bck = WM8960_BCLK_PIN;

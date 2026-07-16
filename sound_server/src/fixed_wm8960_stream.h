@@ -9,13 +9,9 @@ class PersistentWm8960Stream : public audio_tools::WM8960Stream {
  public:
   bool beginPersistent(audio_tools::WM8960Config startupConfig,
                        audio_tools::WM8960Config runtimeConfig) {
-    cfg = startupConfig;
-    currentOutputVolume_ = runtimeConfig.default_volume;
-    if (!audio_tools::WM8960Stream::begin(startupConfig)) {
-      return false;
-    }
-
+    (void)startupConfig;
     cfg = runtimeConfig;
+    currentOutputVolume_ = runtimeConfig.default_volume;
     if (!audio_tools::WM8960Stream::begin(runtimeConfig)) {
       return false;
     }

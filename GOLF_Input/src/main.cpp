@@ -40,7 +40,7 @@
 #define SOUND_GRASS 6
 #define SOUND_LOSE 7
 
-bool soundArmed[8] = {false, true, true, true, true, true, true, true};
+bool soundArmed[8] = {true, true, true, true, true, true, true, true};
 AudioTriggerSender audioTriggerSender;
 
 // MultiTapButton button(BUTTON_1_PIN, LOW);
@@ -149,7 +149,7 @@ void triggerSound(byte soundID)
 
 void armSound(byte soundID)
 {
-	if (soundID < 1 || soundID > 7)
+	if (soundID < 0 || soundID > 7)
 	{
 		return;
 	}
@@ -158,7 +158,7 @@ void armSound(byte soundID)
 
 void armAllSounds()
 {
-	for (byte i = 1; i <= 7; i++)
+	for (byte i = 0; i <= 7; i++)
 	{
 		soundArmed[i] = true;
 	}
@@ -210,8 +210,8 @@ void loop()
 	}
 
 	potValue = analogRead(LDRPIN);
-	scale = potValue / 25;
-	// Serial.println(scale);
+	scale = potValue / 5; // 25;
+	Serial.println(scale);
 	changeRate = scale - currentValue;
 	currentValue = scale;
 
@@ -260,7 +260,7 @@ void loop()
 		isPressingButton = false;
 		golfStrength = handlePower;
 		handlePower = 0;
-		// Serial.print(golfStrength);
+		Serial.print(golfStrength);
 		ballInputLogic();
 	}
 
@@ -976,16 +976,18 @@ void mapMaker()
 	{
 		int terrainRandom = random(0, 7);
 		int terrainCluster;
-		if (terrainRandom == 1)
-		{
-			terrainCluster = random(10, 20);
-			for (int p = i; p < terrainCluster + i; p++)
-			{
-				mapName[mapNameOffset] = 1;
-				mapNameOffset++;
-			}
-		}
-		else if (terrainRandom == 2)
+		// if (terrainRandom == 1)
+		// {
+		// 	terrainCluster = random(10, 20);
+		// 	for (int p = i; p < terrainCluster + i; p++)
+		// 	{
+		// 		mapName[mapNameOffset] = 0;
+		// 		mapNameOffset++;
+		// 		//Formerly Rough, now green
+		// 	}
+		// }
+		// else 
+		if (terrainRandom == 2)
 		{
 			terrainCluster = random(6, 16);
 			for (int p = i; p < terrainCluster + i; p++)
